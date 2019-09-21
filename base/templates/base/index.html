@@ -1,0 +1,112 @@
+ <!DOCTYPE html>
+<html>
+<head>
+    <title>Alzod</title>
+    
+    <style>
+    html, body {margin: 0px; padding: 0px;}
+    a:link,a:visited,a:hover,a:active {text-decoration: none; color: black;}
+    .logo {display: block; height:50px; line-height: 50px;}
+    .logo svg {display: block; float:left;width:50px; height:50px; }
+    .logo span {display: block; float:left; font-size: 30px;}
+    .search_box {display: block; height:50px;}
+    .search_box input[type=textbox] {float:left;width:75vw; height:30px;}
+    .search_box input[type=submit] {float:left;width:15vw; line-height:30px;}
+    .apps_area {
+        margin:115px auto 0 auto; width:100vw; max-width:450px; 
+        overflow: hidden;
+    }
+    .icon_larg {
+        float:left; margin:10px 25px; width:100px; height:100px; 
+        border-radius:10px; background:#dcdcdc; text-align:center;
+    }
+    .icon_larg svg {display: block; margin: 0 auto; width:70px; height:70px;}
+    </style>
+    
+    <script>
+    var RUNNING = [];
+    var SCRIPTS = {};
+
+
+    var fetch_script = function(obj) {
+
+    };
+    
+
+    var AppBass = function(obj) {
+        console.log(obj)
+    };
+
+
+    var find_href = function(node) {
+        if('tagName' in node) {
+            while (node.tagName != 'A') {
+                node = node.parentNode; if(node == null) {break;}
+            };
+        }
+        if(node != null) {
+            if('href' in node) { return node.href; }
+        }
+        return null;
+    };
+
+
+    document.addEventListener("click", function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        var href = find_href(event.target);
+        if(typeof href == 'string') {
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var response = JSON.parse(request.responseText)
+                    if('title' in response) {
+                        AppBass(response);
+                    }
+                }
+            };
+            request.open("GET", href);
+            request.send();
+        }
+    });
+    </script>
+</head>
+
+
+<body>
+    <div class="logo">
+        <svg viewBox="0 0 100 100" height="100" width="100">
+            <circle cx="50" cy="50" r="40" fill="green" />
+        </svg> 
+        <span>Alzod</span>
+    </div>
+
+    <form class="search_box" action='/' method='get'>
+        <input type="textbox" name="s" placeholder="Look for what you want" />
+        <input type="submit" value="Search" />
+    </form>
+
+    <div class="apps_area">
+        <a href="https://jsonplaceholder.typicode.com/posts/1" class="icon_larg">
+            <svg viewBox="0 0 100 100" height="100" width="100">
+                <circle cx="50" cy="50" r="40" fill="blue" />
+            </svg> 
+            <span>المفضلة</span>
+        </a>
+
+        <a href="https://jsonplaceholder.typicode.com/posts/22" class="icon_larg">
+            <svg viewBox="0 0 100 100" height="100" width="100">
+                <circle cx="50" cy="50" r="40" fill="yellow" />
+            </svg> 
+            <span>السلة</span>
+        </a>
+
+        <a href="https://jsonplaceholder.typicode.com/users" class="icon_larg">
+            <svg viewBox="0 0 100 100" height="100" width="100">
+                <circle cx="50" cy="50" r="40" fill="red" />
+            </svg> 
+            <span>تسجيل</span>
+        </a>
+    </div>
+</body>
+</html> 
