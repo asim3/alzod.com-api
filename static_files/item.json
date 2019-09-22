@@ -1,6 +1,5 @@
 {
-    "status": "done",
-    "type": "item",
     "id": "123",
-    "body": "Body here"
+    "type": "item",
+    "content": "Body here"
 }

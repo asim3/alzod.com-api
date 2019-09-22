@@ -1,4 +1,4 @@
-SCRIPTS['test'] = function(obj){
-    let content = 'my tttttt app'
+SCRIPTS['test'] = function(app){
+    let content = SCRIPTS['head'](app)
     return content
 }
