@@ -23,18 +23,44 @@
     .icon_larg svg {display: block; margin: 0 auto; width:70px; height:70px;}
     </style>
     
-    <script>
+    <script type="text/javascript">
     var RUNNING = [];
     var SCRIPTS = {};
 
 
     var fetch_script = function(obj) {
-
+        var head = document.getElementsByTagName('head')[0];
+        var script = document.createElement('script');
+        script.id = "js_script_" + obj.type;
+        script.type = 'text/javascript';
+        script.onload = function() { 
+            if(obj.type in SCRIPTS) { run_app(obj); }
+            else { console.error(obj.type + ' not in SCRIPTS object!'); }
+        }
+        script.onerror = function() { loading_page('hide'); }
+        head.appendChild(script);
+        script.src = "http://localhost:8000/static/"+ obj.type +".js";
     };
     
 
-    var AppBass = function(obj) {
-        console.log(obj)
+    var run_app = function(obj) {
+        if(obj.type in SCRIPTS) {
+            var div = document.createElement('div');
+            div.id = "app_" + obj.id;
+            var app = {
+                "type": obj.type,
+                "body": SCRIPTS[obj.type](obj),
+                "show": function() {},
+                "hide": function() {},
+                "remove": function() {}
+            }
+            loading_page('hide');
+            RUNNING.push(app)
+            console.log(RUNNING)
+        }
+        else {
+            fetch_script(obj);
+        }
     };
 
 
@@ -51,6 +77,11 @@
     };
 
 
+    var loading_page = function(status) {
+        console.log(status == 'hide' ? 'Done loading' : 'Loading..');
+    };
+
+
     document.addEventListener("click", function(event){
         event.preventDefault();
         event.stopPropagation();
@@ -58,14 +89,22 @@
         if(typeof href == 'string') {
             var request = new XMLHttpRequest();
             request.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                    var response = JSON.parse(request.responseText)
-                    if('title' in response) {
-                        AppBass(response);
+                if(this.readyState == 4 && this.status == 200) {
+                    var json_response = JSON.parse(request.responseText)
+                    if('type' in json_response) {
+                        run_app(json_response);
                     }
+                    else { 
+                        console.error('response does not contain type object!');
+                        loading_page('hide');
+                    }
+                }
+                else if(this.readyState == 4) {
+                    loading_page('hide');
                 }
             };
             request.open("GET", href);
+            loading_page();
             request.send();
         }
     });
@@ -87,21 +126,21 @@
     </form>
 
     <div class="apps_area">
-        <a href="https://jsonplaceholder.typicode.com/posts/1" class="icon_larg">
+        <a href="/static/item.json" class="icon_larg">
             <svg viewBox="0 0 100 100" height="100" width="100">
                 <circle cx="50" cy="50" r="40" fill="blue" />
             </svg> 
             <span>المفضلة</span>
         </a>
 
-        <a href="https://jsonplaceholder.typicode.com/posts/22" class="icon_larg">
+        <a href="/static/test.json" class="icon_larg">
             <svg viewBox="0 0 100 100" height="100" width="100">
                 <circle cx="50" cy="50" r="40" fill="yellow" />
             </svg> 
             <span>السلة</span>
         </a>
 
-        <a href="https://jsonplaceholder.typicode.com/users" class="icon_larg">
+        <a href="/static/test.json" class="icon_larg">
             <svg viewBox="0 0 100 100" height="100" width="100">
                 <circle cx="50" cy="50" r="40" fill="red" />
             </svg> 
