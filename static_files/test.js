@@ -1,4 +1,4 @@
-SCRIPTS['test'] = function(app){
-    let content = SCRIPTS['head'](app)
+Controller.view['test'] = function(app){
+    let content = Controller.view['head'](app)
     return content
 }

@@ -1,4 +1,4 @@
-SCRIPTS['head'] = function(app){
+Controller.view['head'] = function(app){
     const root_div = document.createElement('div');
     root_div.innerHTML = `
         <div style="font-size:30px;">

@@ -1,0 +1,69 @@
+.none {
+    /* display: none; */
+    background: red;
+}
+.error_root {
+    display: block;
+    background: rebeccapurple;
+    z-index: 100;
+}
+a:link,
+a:visited,
+a:hover,
+a:active {
+    text-decoration: none; 
+    color: black;
+}
+.logo {
+    display: block; 
+    height:50px; 
+    line-height: 50px;
+}
+.logo svg {
+    display: block; 
+    float:left;
+    width:50px; 
+    height:50px; 
+}
+.logo span {
+    display: block; 
+    float:left; 
+    font-size: 30px;
+
+}
+.search_box {
+    display: block; 
+    height:50px;
+
+}
+.search_box input[type=textbox] {
+    float:left;
+    width:75vw; 
+    height:30px;
+}
+.search_box input[type=submit] {
+    float:left;
+    width:15vw; 
+    line-height:30px;
+}
+.apps_area {
+    margin:115px auto 0 auto; 
+    width:100vw; 
+    max-width:450px; 
+    overflow: hidden;
+}
+.icon_larg {
+    float:left; 
+    margin:10px 25px; 
+    width:100px; 
+    height:100px; 
+    border-radius:10px; 
+    background:#dcdcdc; 
+    text-align:center;
+}
+.icon_larg svg {
+    display: block; 
+    margin: 0 auto; 
+    width:70px; 
+    height:70px;
+}

@@ -1,176 +1,106 @@
  <!DOCTYPE html>
 <html>
 <head>
-    <title>Alzod</title>
-    
-    <style>
+<title>Alzod</title>
+<style>
     html, body {margin: 0px; padding: 0px;}
-    a:link,a:visited,a:hover,a:active {text-decoration: none; color: black;}
-    .none {background: red;}
-    .logo {display: block; height:50px; line-height: 50px;}
-    .logo svg {display: block; float:left;width:50px; height:50px; }
-    .logo span {display: block; float:left; font-size: 30px;}
-    .search_box {display: block; height:50px;}
-    .search_box input[type=textbox] {float:left;width:75vw; height:30px;}
-    .search_box input[type=submit] {float:left;width:15vw; line-height:30px;}
-    .apps_area {
-        margin:115px auto 0 auto; width:100vw; max-width:450px; 
-        overflow: hidden;
+</style>
+<link rel="icon" href="/static/demo_icon.gif" type="image/gif">
+<link rel="stylesheet" type="text/css" href="/static/main.css">
+<script type="text/javascript">
+
+var ErrorDiv = {
+    show: function(html) {
+        var error_div = document.getElementById('error_div');
+        console.error(html);
+        error_div.innerHTML = html;
+        error_div.setAttribute("class", "error_root");
+    },
+    hide: function() {
+        var error_div = document.getElementById('error_div');
+        error_div.innerHTML = "hide";
+        error_div.setAttribute("class", "none");
+        Controller.running.app_load.hide();
     }
-    .icon_larg {
-        float:left; margin:10px 25px; width:100px; height:100px; 
-        border-radius:10px; background:#dcdcdc; text-align:center;
-    }
-    .icon_larg svg {display: block; margin: 0 auto; width:70px; height:70px;}
-    </style>
-    
-    <script type="text/javascript">
+};
 
-    var AppBase = function(obj_id) {
-        obj_id = obj_id || "app_" + APP_ORDER++;
-        return {
-            "id": obj_id,
-            "hide": function() { 
-                var div = document.getElementById(obj_id);
-                if(div) { div.setAttribute("class", "none"); }
-                else { console.error(obj_id + " not found!"); }
-            },
-            "show": function() { 
-                for (var app in RUNNING) { RUNNING[app].hide(); }
-                if(obj_id == "app_last") {
-                    var last = "app_index";
-                    var sys_apps = ['app_load', 'app_last', 'app_error']
-                    for (var app in RUNNING) { 
-                        if(sys_apps.indexOf(app) == -1) { 
-                            last = app; 
-                        }
-                    }
-                    RUNNING[last].show();
-                }
-                else {
-                    var div = document.getElementById(obj_id);
-                    div.setAttribute("class", "app");
-                }
-            },
-            "remove": function() {
-                document.getElementById(obj_id).remove();
-                delete RUNNING[obj_id];
-                RUNNING["app_last"].show();
-            }
-        };
-    };
-    
-
-    var fetch_script = function(obj) {
-        var head = document.getElementsByTagName('head')[0];
-        var script = document.createElement('script');
-        script.id = "js_script_" + obj.type;
-        script.type = 'text/javascript';
-        script.onload = function() { 
-            if(obj.type in SCRIPTS) { 
-                if(['head'].indexOf(obj.type) === -1) { 
-                    run_app(obj); 
-                }
-            }
-            else{ console.error('SCRIPTS does not contain ' + obj.type); }
-        };
-        script.onerror = function() { RUNNING.app_error.show(); };
-        head.appendChild(script);
-        script.src = "http://localhost:8000/static/"+ obj.type +".js";
-    };
-
-
-    var run_app = function(obj) {
-        if(obj.type in SCRIPTS) {
-            var app = AppBase();
-            app.type = obj.type;
-            app.content = obj.content;
-            var content = SCRIPTS[obj.type](app);
-            var app_div = document.createElement('div');
-            app_div.className = "none";
-            app_div.id = app.id;
-            app_div.appendChild(content);
-            document.getElementById('app_root').appendChild(app_div);
-            RUNNING[app.id] = app;
-            app.show();
-        }
-        else {
-            fetch_script(obj);
-        }
-    };
-
-
-    var find_href = function(node) {
-        if('tagName' in node) {
-            while (node.tagName.toLowerCase() != 'a') {
-                node = node.parentNode; if(node == null) {break;}
-            };
-        }
-        if(node != null) {
-            if('href' in node) { return node.href; }
-        }
-        return null;
-    };
-
-
-    document.addEventListener("click", function(event){
-        var href = find_href(event.target);
-        if(typeof href == 'string') {
-            event.preventDefault();
-            event.stopPropagation();
+var Controller = {
+    running: {},
+    view: {},
+    model: {
+        fetch: function(href) {
             var request = new XMLHttpRequest();
             request.onreadystatechange = function() {
                 if(this.readyState == 4 && this.status == 200) {
                     var json_response = JSON.parse(request.responseText);
                     if('type' in json_response) {
-                        run_app(json_response);
+                        if('add' in Controller) {
+                            Controller.add(json_response);
+                        }
+                        else { ErrorDiv.show("add not found!"); }
                     }
                     else {
-                        console.error('response does not contain type object!');
-                        RUNNING.app_index.show();
+                        ErrorDiv.show('response does not contain type!');
                     }
                 }
                 else if(this.readyState == 4) {
-                    RUNNING.app_error.show();
+                    ErrorDiv.show("model.fetch status: " + this.status);
                 }
             };
             request.open("GET", href);
-            RUNNING.app_load.show();
             request.send();
         }
-    });
+    },
+    show: function(app) { Controller.running[app].show(); },
+    fetch: function(href) { 
+        Controller.show('app_load');
+        Controller.model.fetch(href);
+    },
+};
 
-    var APP_ORDER = 1;
-    var SCRIPTS = {};
-    var RUNNING = {
-        "app_index": AppBase("app_index"),
-        "app_load": AppBase("app_load"),
-        "app_last": AppBase("app_last"),
-        "app_error": AppBase("app_error")
-    };
-    
-    run_app({"type": "head"});
 
-    </script>
+document.addEventListener("click", function(event){
+    var target = event.target;
+    if('tagName' in target) {
+        while (target.tagName && target.tagName.toLowerCase() != 'a') {
+            target = target.parentNode; 
+            if(!target) { break; }
+        };
+    }
+    var href = null;
+    if(target) {
+        if('href' in target) { 
+            href = target.href; 
+        }
+    }
+    if(typeof href == 'string') {
+        event.preventDefault();
+        event.stopPropagation();
+        Controller.fetch(href);
+    }
+});
+</script>
+<script src="/static/main.js"></script>
+<script src="/static/head.js"></script>
 </head>
 
 
 <body>
-<div class="logo">
-    <svg viewBox="0 0 100 100" height="100" width="100">
-        <circle cx="50" cy="50" r="40" fill="green" />
-    </svg> 
-    <span>Alzod</span>
+<div id="error_div" class="none" onclick="ErrorDiv.hide();">
+    Error
 </div>
 
 <div id="app_root">
     <div id="app_load" class="app">loading</div>
-    <div id="app_last" class="app">Last</div>
-    <div id="app_error" class="app" onclick="RUNNING.app_last.show();">
-        Error
-    </div>
+    <div id="app_last" class="none">Last</div>
+    <div id="app_index" class="none">
+        <div class="logo">
+            <svg viewBox="0 0 100 100" height="100" width="100">
+                <circle cx="50" cy="50" r="40" fill="green" />
+            </svg> 
+            <span>Alzod</span>
+        </div>
 
-    <div id="app_index" class="app">
         <form class="search_box" action='/' method='get'>
             <input type="textbox" name="s" placeholder="Look for what you want" />
             <input type="submit" value="Search" />
@@ -184,7 +114,7 @@
                 <span>المفضلة</span>
             </a>
 
-            <a href="/static/test.json" class="icon_larg">
+            <a href="/static/item.json" class="icon_larg">
                 <svg viewBox="0 0 100 100" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="yellow" />
                 </svg> 
