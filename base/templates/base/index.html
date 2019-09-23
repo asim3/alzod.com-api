@@ -26,6 +26,41 @@
     
     <script type="text/javascript">
 
+    var AppBase = function(obj_id) {
+        obj_id = obj_id || "app_" + APP_ORDER++;
+        return {
+            "id": obj_id,
+            "hide": function() { 
+                var div = document.getElementById(obj_id);
+                if(div) { div.setAttribute("class", "none"); }
+                else { console.error(obj_id + " not found!"); }
+            },
+            "show": function() { 
+                for (var app in RUNNING) { RUNNING[app].hide(); }
+                if(obj_id == "app_last") {
+                    var last = "app_index";
+                    var sys_apps = ['app_load', 'app_last', 'app_error']
+                    for (var app in RUNNING) { 
+                        if(sys_apps.indexOf(app) == -1) { 
+                            last = app; 
+                        }
+                    }
+                    RUNNING[last].show();
+                }
+                else {
+                    var div = document.getElementById(obj_id);
+                    div.setAttribute("class", "app");
+                }
+            },
+            "remove": function() {
+                document.getElementById(obj_id).remove();
+                delete RUNNING[obj_id];
+                RUNNING["app_last"].show();
+            }
+        };
+    };
+    
+
     var fetch_script = function(obj) {
         var head = document.getElementsByTagName('head')[0];
         var script = document.createElement('script');
@@ -37,7 +72,7 @@
                     run_app(obj); 
                 }
             }
-            else{ console.error(obj.type + ' not in SCRIPTS object!'); }
+            else{ console.error('SCRIPTS does not contain ' + obj.type); }
         };
         script.onerror = function() { RUNNING.app_error.show(); };
         head.appendChild(script);
@@ -45,37 +80,10 @@
     };
 
 
-    var AppBase = function(obj_id) {
-        obj_id = obj_id || "app_" + APP_ORDER++;
-        return {
-            "id": obj_id,
-            "hide": function() { 
-                var div = document.getElementById(obj_id);
-                div.setAttribute("class", "none");
-            },
-            "show": function() { 
-                for (var app in RUNNING) { RUNNING[app].hide(); }
-                var div = document.getElementById(obj_id);
-                div.setAttribute("class", "app");
-            },
-            "remove": function() {
-                document.getElementById(obj_id).remove();
-                delete RUNNING[obj_id];
-                var last = "app_index";
-                for (var app in RUNNING) { 
-                    if(['app_load', 'app_error'].indexOf(app) == -1) { 
-                        last = app; 
-                    }
-                }
-                RUNNING[last].show();
-            }
-        };
-    };
-    
-
     var run_app = function(obj) {
         if(obj.type in SCRIPTS) {
             var app = AppBase();
+            app.type = obj.type;
             app.content = obj.content;
             var content = SCRIPTS[obj.type](app);
             var app_div = document.createElement('div');
@@ -94,7 +102,7 @@
 
     var find_href = function(node) {
         if('tagName' in node) {
-            while (node.tagName != 'A') {
+            while (node.tagName.toLowerCase() != 'a') {
                 node = node.parentNode; if(node == null) {break;}
             };
         }
@@ -106,10 +114,10 @@
 
 
     document.addEventListener("click", function(event){
-        event.preventDefault();
-        event.stopPropagation();
         var href = find_href(event.target);
         if(typeof href == 'string') {
+            event.preventDefault();
+            event.stopPropagation();
             var request = new XMLHttpRequest();
             request.onreadystatechange = function() {
                 if(this.readyState == 4 && this.status == 200) {
@@ -123,7 +131,7 @@
                     }
                 }
                 else if(this.readyState == 4) {
-                    RUNNING.app_index.show();
+                    RUNNING.app_error.show();
                 }
             };
             request.open("GET", href);
@@ -137,6 +145,7 @@
     var RUNNING = {
         "app_index": AppBase("app_index"),
         "app_load": AppBase("app_load"),
+        "app_last": AppBase("app_last"),
         "app_error": AppBase("app_error")
     };
     
@@ -156,7 +165,8 @@
 
 <div id="app_root">
     <div id="app_load" class="app">loading</div>
-    <div id="app_error" class="app" onclick="RUNNING.app_index.show();">
+    <div id="app_last" class="app">Last</div>
+    <div id="app_error" class="app" onclick="RUNNING.app_last.show();">
         Error
     </div>
 
@@ -167,7 +177,7 @@
         </form>
 
         <div class="apps_area">
-            <a href="/static/item.json" class="icon_larg">
+            <a href="/static/itecm.json" class="icon_larg">
                 <svg viewBox="0 0 100 100" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="blue" />
                 </svg> 

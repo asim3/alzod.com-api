@@ -26,6 +26,6 @@ urlpatterns = [
 
     # Base
     # path('search/', "view"),
-    # path('<int:id>/', "view"),
+    path('<int:id>', TemplateView.as_view(template_name="base/index.html") ),
     path('', TemplateView.as_view(template_name="base/index.html") ),
 ]
