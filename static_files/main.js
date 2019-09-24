@@ -1,5 +1,31 @@
 (function() {
-Controller.auto_id = 1;
+
+var AppBase = function(obj_id) {
+    var index = Controller.auto_id++;
+    obj_id = obj_id || "app_" + index;
+    return {
+        "id": obj_id,
+        "index": index,
+        "hide": function() {
+            var div = document.getElementById(obj_id);
+            if(div) { div.setAttribute("class", "none"); }
+            else { Controller.error.show(obj_id + " not found!"); }
+        },
+        "show": function() {
+            for (var app in Controller.running) { 
+                Controller.running[app].hide(); 
+            }
+            var div = document.getElementById(obj_id);
+            div.setAttribute("class", "app");
+            Controller.loading.hide();
+        },
+        "remove": function() {
+            document.getElementById(obj_id).remove();
+            delete Controller.running[obj_id];
+            Controller.show_last_app();
+        }
+    };
+};
 
 Controller.model.fetch_script = function(obj) {
     var head = document.getElementsByTagName('head')[0];
@@ -8,60 +34,33 @@ Controller.model.fetch_script = function(obj) {
     script.type = 'text/javascript';
     script.onload = function() { 
         if(obj.type in Controller.view) {
-            if(['head'].indexOf(obj.type) === -1) { 
-                Controller.add(obj);
-            }
+            Controller.add(obj);
         }
         else{ 
-            ErrorDiv.show('Controller.view does not contain '+obj.type);
+          Controller.error.show('Controller.view does not contain '+obj.type);
         }
     };
-    script.onerror = function() { ErrorDiv.show('adding script!'); };
+    script.onerror = function() { Controller.error.show('adding script!'); };
     head.appendChild(script);
-    script.src = "http://localhost:8000/static/"+ obj.type +".js";
+    script.src = "/static/"+ obj.type +".js";
 };
 
-var AppBase = function(obj_id) {
-    obj_id = obj_id || "app_" + Controller.auto_id++;
-    return {
-        "id": obj_id,
-        "hide": function() { 
-            var div = document.getElementById(obj_id);
-            if(div) { div.setAttribute("class", "none"); }
-            else { ErrorDiv.show(obj_id + " not found!"); }
-        },
-        "show": function() { 
-            for (var app in Controller.running) { 
-                Controller.running[app].hide(); 
-            }
-            if(obj_id == "app_last") {
-                var last = "app_index";
-                var sys_apps = ['app_load', 'app_last', 'app_error']
-                for (var app in Controller.running) { 
-                    if(sys_apps.indexOf(app) == -1) { 
-                        last = app; 
-                    }
-                }
-                Controller.running[last].show();
-            }
-            else {
-                var div = document.getElementById(obj_id);
-                div.setAttribute("class", "app");
-            }
-        },
-        "remove": function() {
-            document.getElementById(obj_id).remove();
-            delete Controller.running[obj_id];
-            Controller.running["app_last"].show();
+Controller.show_last_app = function() {
+    var last = "app_home";
+    var index = 0;
+    for (var app in Controller.running) { 
+        if(index < Controller.running[last].index) { 
+            last = app; 
         }
-    };
+    }
+    Controller.show(last);
 };
-
 
 Controller.add = function(obj) {
     if(obj.type in Controller.view) {
         var app = AppBase();
         app.type = obj.type;
+        app.href = obj.href;
         app.content = obj.content;
         var content = Controller.view[obj.type](app);
         var app_div = document.createElement('div');
@@ -70,17 +69,18 @@ Controller.add = function(obj) {
         app_div.appendChild(content);
         document.getElementById('app_root').appendChild(app_div);
         Controller.running[app.id] = app;
-        app.show();
+        Controller.show(app.id);
     }
     else {
         Controller.model.fetch_script(obj);
     }
 };
 
+Controller.auto_id = 100;
 
-Controller.running["app_index"] = AppBase("app_index");
-Controller.running["app_load"] = AppBase("app_load");
-Controller.running["app_last"] = AppBase("app_last");
-
-Controller.running.app_index.show();
-})()
+Controller.running.app_home = AppBase("app_home");
+Controller.running.app_home.index = 1;
+if(!Controller.initial_item) {
+    Controller.show('app_home');
+}
+})();

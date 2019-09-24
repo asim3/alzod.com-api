@@ -3,61 +3,102 @@
 <head>
 <title>Alzod</title>
 <style>
-    html, body {margin: 0px; padding: 0px;}
+html, body {margin: 0px; padding: 0px; text-align:center;}
+a:link,
+a:visited,
+a:hover,
+a:active {text-decoration: none; color: black;}
+.none {display: none;}
+.app {width:100vw; min-height:100vh;}
+.loading_root {
+    z-index: 99; position:fixed; top:0px; left:0px; width:100vw; height:100vw; 
+    background: rgb(59, 153, 51);
+}
+.error_root {
+    z-index: 100; position:fixed; top:0px; left:0px; width:100vw; height:100vw; 
+    background: #e28484; cursor: pointer;
+}
+.error_text {padding-top:30vh; font-size:30px;}
+.logo {display: block; height:50px; line-height: 50px;}
+.logo svg {display: block; float:left;width:50px; height:50px; }
+.logo span {display: block; float:left; font-size: 30px;}
+.search_box {display: block; height:50px;}
+.search_box input[type=textbox] {float:left;width:75vw; height:30px;}
+.search_box input[type=submit] {float:left;width:15vw; line-height:30px;}
+.icons_root {margin:0 auto; width:100vw; max-width:450px; overflow: hidden;}
+.icon_larg {
+    float:left; margin:10px 25px; width:100px; height:100px; 
+    border-radius:10px; background:#dcdcdc;
+}
+.icon_larg svg {display: block; margin: 0 auto; width:70px; height:70px;}
 </style>
 <link rel="icon" href="/static/demo_icon.gif" type="image/gif">
-<link rel="stylesheet" type="text/css" href="/static/main.css">
 <script type="text/javascript">
 
-var ErrorDiv = {
-    show: function(html) {
-        var error_div = document.getElementById('error_div');
-        console.error(html);
-        error_div.innerHTML = html;
-        error_div.setAttribute("class", "error_root");
-    },
-    hide: function() {
-        var error_div = document.getElementById('error_div');
-        error_div.innerHTML = "hide";
-        error_div.setAttribute("class", "none");
-        Controller.running.app_load.hide();
-    }
-};
-
 var Controller = {
+    initial_item: null,
     running: {},
     view: {},
-    model: {
-        fetch: function(href) {
-            var request = new XMLHttpRequest();
-            request.onreadystatechange = function() {
-                if(this.readyState == 4 && this.status == 200) {
-                    var json_response = JSON.parse(request.responseText);
-                    if('type' in json_response) {
-                        if('add' in Controller) {
-                            Controller.add(json_response);
-                        }
-                        else { ErrorDiv.show("add not found!"); }
-                    }
-                    else {
-                        ErrorDiv.show('response does not contain type!');
-                    }
-                }
-                else if(this.readyState == 4) {
-                    ErrorDiv.show("model.fetch status: " + this.status);
-                }
-            };
-            request.open("GET", href);
-            request.send();
-        }
-    },
     show: function(app) { Controller.running[app].show(); },
     fetch: function(href) { 
-        Controller.show('app_load');
+        Controller.loading.show();
         Controller.model.fetch(href);
     },
+    model: {
+      fetch: function(href) {
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+            if(this.readyState == 4 && this.status == 200) {
+              try {
+                var json_response = JSON.parse(request.responseText);
+                if('type' in json_response) {
+                  if('add' in Controller) {
+                    json_response.href = href;
+                    Controller.add(json_response);
+                  }
+                  else { Controller.error.show("add not found!"); }
+                }
+                else {
+                  Controller.error.show('response does not contain type!');
+                }
+              }
+              catch(error) {
+                  Controller.error.show("JSON.parse: " + error);
+              }
+            }
+            else if(this.readyState == 4) {
+              Controller.error.show("model.fetch status: " + this.status);
+            }
+        };
+        request.open("GET", href);
+        request.send();
+      }
+    },
+    loading: {
+        show: function() {
+            var loading_div = document.getElementById('loading_div');
+            loading_div.setAttribute("class", "loading_root");
+        },
+        hide: function() {
+            var loading_div = document.getElementById('loading_div');
+            loading_div.setAttribute("class", "none");
+        }
+    },
+    error: {
+        show: function(html) {
+            var error_div = document.getElementById('error_div');
+            console.error(html);
+            error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
+            error_div.setAttribute("class", "error_root");
+        },
+        hide: function() {
+            var error_div = document.getElementById('error_div');
+            error_div.innerHTML = "hide";
+            error_div.setAttribute("class", "none");
+            Controller.loading.hide();
+        }
+    }
 };
-
 
 document.addEventListener("click", function(event){
     var target = event.target;
@@ -80,20 +121,18 @@ document.addEventListener("click", function(event){
     }
 });
 </script>
-<script src="/static/main.js"></script>
-<script src="/static/head.js"></script>
 </head>
 
 
 <body>
-<div id="error_div" class="none" onclick="ErrorDiv.hide();">
-    Error
+<div id="loading_div" class="none">
+    <div class="error_text">loading</div>
 </div>
 
+<div id="error_div" class="none" onclick="Controller.error.hide();">e</div>
+
 <div id="app_root">
-    <div id="app_load" class="app">loading</div>
-    <div id="app_last" class="none">Last</div>
-    <div id="app_index" class="none">
+    <div id="app_home" class="app">
         <div class="logo">
             <svg viewBox="0 0 100 100" height="100" width="100">
                 <circle cx="50" cy="50" r="40" fill="green" />
@@ -102,11 +141,11 @@ document.addEventListener("click", function(event){
         </div>
 
         <form class="search_box" action='/' method='get'>
-            <input type="textbox" name="s" placeholder="Look for what you want" />
+            <input type="textbox" name="s" placeholder="Search" />
             <input type="submit" value="Search" />
         </form>
 
-        <div class="apps_area">
+        <div class="icons_root">
             <a href="/static/itecm.json" class="icon_larg">
                 <svg viewBox="0 0 100 100" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="blue" />
@@ -123,12 +162,30 @@ document.addEventListener("click", function(event){
 
             <a href="/static/test.json" class="icon_larg">
                 <svg viewBox="0 0 100 100" height="100" width="100">
-                    <circle cx="50" cy="50" r="40" fill="red" />
+                    <circle cx="50" cy="50" r="40" fill="gray" />
                 </svg> 
                 <span>تسجيل</span>
+            </a>
+
+            <a href="/static/error.json" class="icon_larg">
+                <svg viewBox="0 0 100 100" height="100" width="100">
+                    <circle cx="50" cy="50" r="40" fill="red" />
+                </svg> 
+                <span>Error</span>
             </a>
         </div>
     </div>
 </div>
+
+<script type="text/javascript">
+    var initial_item = window.location.pathname.replace(/^\//, "");
+    if(!isNaN(initial_item) && initial_item.length > 0) {
+        Controller.initial_item = initial_item;
+        Controller.fetch(initial_item);
+    }
+</script>
+<link rel="stylesheet" type="text/css" href="/static/main.css">
+<script src="/static/main.js"></script>
+<script src="/static/head.js"></script>
 </body>
 </html> 
