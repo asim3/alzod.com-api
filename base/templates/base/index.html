@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
 <title>Alzod</title>
@@ -8,8 +8,8 @@ a:link,
 a:visited,
 a:hover,
 a:active {text-decoration: none; color: black;}
-.none {display: none;}
-.app {width:100vw; min-height:100vh;}
+/*.none {display: none;}*/
+.view_root {width:100vw; min-height:100vh;}
 .loading_root {
     z-index: 99; position:fixed; top:0px; left:0px; width:100vw; height:100vw; 
     background: rgb(59, 153, 51);
@@ -22,7 +22,7 @@ a:active {text-decoration: none; color: black;}
 .logo {display: block; height:50px; line-height: 50px;}
 .logo svg {display: block; float:left;width:50px; height:50px; }
 .logo span {display: block; float:left; font-size: 30px;}
-.search_box {display: block; height:50px;}
+.search_box {display: block; height:250px;}
 .search_box input[type=textbox] {float:left;width:75vw; height:30px;}
 .search_box input[type=submit] {float:left;width:15vw; line-height:30px;}
 .icons_root {margin:0 auto; width:100vw; max-width:450px; overflow: hidden;}
@@ -36,16 +36,23 @@ a:active {text-decoration: none; color: black;}
 <script type="text/javascript">
 
 var Controller = {
+    current_history: window.history.length,
+    current_index: 1,
     initial_item: null,
     running: {},
     view: {},
-    show: function(app) { Controller.running[app].show(); },
-    fetch: function(href) { 
+    show: function(view) { Controller.running[view].show(); },
+    remove: function(view) { Controller.running[view].remove(); },
+    fetch: function(href, type, data) { 
         Controller.loading.show();
-        Controller.model.fetch(href);
+        // get from memory, if not fetch ... 
+        Controller.model.fetch(href, type, data);
     },
     model: {
-      fetch: function(href) {
+      fetch: function(href, type, data) {
+        type = type || "get";
+        type = type.toUpperCase();
+
         var request = new XMLHttpRequest();
         request.onreadystatechange = function() {
             if(this.readyState == 4 && this.status == 200) {
@@ -70,8 +77,14 @@ var Controller = {
               Controller.error.show("model.fetch status: " + this.status);
             }
         };
-        request.open("GET", href);
-        request.send();
+        request.open(type, href, true);
+        if(data === undefined) { request.send(data); }
+        else {
+            data = JSON.stringify(data);
+            var Content_type = 'application/json; charset=utf-8';
+            request.setRequestHeader('Content-type', Content_type);
+            request.send();
+        }
       }
     },
     loading: {
@@ -90,6 +103,7 @@ var Controller = {
             console.error(html);
             error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
             error_div.setAttribute("class", "error_root");
+            // send error html to server ... 
         },
         hide: function() {
             var error_div = document.getElementById('error_div');
@@ -100,26 +114,22 @@ var Controller = {
     }
 };
 
-document.addEventListener("click", function(event){
-    var target = event.target;
-    if('tagName' in target) {
-        while (target.tagName && target.tagName.toLowerCase() != 'a') {
-            target = target.parentNode; 
-            if(!target) { break; }
-        };
-    }
-    var href = null;
-    if(target) {
-        if('href' in target) { 
-            href = target.href; 
+document.onsubmit = function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    var elements = event.target.elements;
+    var form_data = {};
+
+    // https://lengstorf.com/get-form-values-as-json/
+    for(var i = 0; i < event.target.elements.length; i++) {
+        if(1) {
+            form_data[elements[i].name] = elements[i].value;
         }
     }
-    if(typeof href == 'string') {
-        event.preventDefault();
-        event.stopPropagation();
-        Controller.fetch(href);
-    }
-});
+
+    // ... 
+    Controller.fetch(event.target.action, "post", form_data);
+};
 </script>
 </head>
 
@@ -131,8 +141,8 @@ document.addEventListener("click", function(event){
 
 <div id="error_div" class="none" onclick="Controller.error.hide();">e</div>
 
-<div id="app_root">
-    <div id="app_home" class="app">
+<div id="all_views">
+    <div id="view_home" class="view_root">
         <div class="logo">
             <svg viewBox="0 0 100 100" height="100" width="100">
                 <circle cx="50" cy="50" r="40" fill="green" />
@@ -140,34 +150,51 @@ document.addEventListener("click", function(event){
             <span>Alzod</span>
         </div>
 
-        <form class="search_box" action='/' method='get'>
-            <input type="textbox" name="s" placeholder="Search" />
+        <form class="search_box" action='/static/search.json' method='GET'>
+            <input type="textbox" name="aaa" placeholder="Search" />
+            <input type="textbox" name="bbb" placeholder="Search" />
+            <input type="textbox" name="ccc" placeholder="Search" />
+            <textarea name='ttt'>
+            </textarea>
+            <select name="cars" size="4" multiple>
+            <option value="volvo">Volvo</option>
+            <option value="saab">Saab</option>
+            <option value="fiat">Fiat</option>
+            <option value="audi">Audi</option>
+            </select>
+            <input type="checkbox" name="vehicle1" value="Bike"> I have a bike<br>
+            <input type="checkbox" name="vehicle2" value="Car"> I have a car<br>
+            <input type="checkbox" name="vehicle3" value="Boat" checked> I have a boat<br>
             <input type="submit" value="Search" />
         </form>
 
         <div class="icons_root">
-            <a href="/static/itecm.json" class="icon_larg">
+            <a href="/static/itecm.json" title="المفضلة" class="icon_larg"
+                onclick="Controller.fetch(this.href);return false;">
                 <svg viewBox="0 0 100 100" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="blue" />
                 </svg> 
                 <span>المفضلة</span>
             </a>
 
-            <a href="/static/item.json" class="icon_larg">
+            <a href="/static/item.json" title="المفضلة" class="icon_larg"
+                onclick="Controller.fetch(this.href);return false;">
                 <svg viewBox="0 0 100 100" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="yellow" />
                 </svg> 
                 <span>السلة</span>
             </a>
 
-            <a href="/static/test.json" class="icon_larg">
+            <a href="/static/test.json" title="المفضلة" class="icon_larg"
+                onclick="Controller.fetch(this.href);return false;">
                 <svg viewBox="0 0 100 100" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="gray" />
                 </svg> 
                 <span>تسجيل</span>
             </a>
 
-            <a href="/static/error.json" class="icon_larg">
+            <a href="/static/error.json" title="المفضلة" class="icon_larg"
+                onclick="Controller.fetch(this.href);return false;">
                 <svg viewBox="0 0 100 100" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="red" />
                 </svg> 

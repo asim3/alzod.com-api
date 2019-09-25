@@ -25,6 +25,7 @@ urlpatterns = [
     # path('edit/<int:id>/', "view"),
 
     # Base
+    path('search/', TemplateView.as_view(template_name="base/search.json") ),
     # path('search/', "view"),
     path('<int:id>', TemplateView.as_view(template_name="base/index.html") ),
     path('', TemplateView.as_view(template_name="base/index.html") ),
