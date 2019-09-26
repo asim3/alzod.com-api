@@ -12,8 +12,10 @@ var ViewBase = function(obj_id) {
             else { Controller.error.show(obj_id + " not found!"); }
         },
         "show": function() {
-            for (var view in Controller.running) { 
-                Controller.running[view].hide(); 
+            for (var view in Controller.running) {
+                if(Controller.running.hasOwnProperty(view)) {
+                    Controller.running[view].hide(); 
+                }
             }
             var div = document.getElementById(obj_id);
             div.setAttribute("class", "view_root");
@@ -82,7 +84,7 @@ Controller.add = function(obj) {
         view_div.id = view.id;
 
         try {
-            var head_div = Controller.view['head'](view);
+            var head_div = Controller.view.head(view);
             var content_div = Controller.view[view.type](view);
             view_div.appendChild(head_div);
             view_div.appendChild(content_div);
@@ -100,7 +102,7 @@ Controller.add = function(obj) {
             var page_info = {
                 index: Controller.current_index++, 
                 obj: obj
-            }
+            };
             window.history.pushState(page_info, null, page_info.obj.href);
         }
     }
