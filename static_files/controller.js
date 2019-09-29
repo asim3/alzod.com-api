@@ -1,5 +1,65 @@
 (function() {
 
+var form_to_json = function(elements) {
+    return [].reduce.call(elements, function(data, elm) {
+        var is_valid = false;
+        if(elm.name && elm.value) {
+            if(elm.type != 'radio' && elm.type != 'checkbox') {
+                is_valid = true;
+            }
+            else { is_valid = elm.checked; }
+        }
+        if (is_valid) {
+            if (elm.type === 'checkbox') {
+                data[elm.name] = (data[elm.name] || []).concat(elm.value);
+            }
+            else if (elm.options && elm.multiple) {
+                data[elm.name] = [].reduce.call(elm, function(val, option) {
+                    return option.selected ? val.concat(option.value) : val;
+                }, []);
+            }
+            else {
+                data[elm.name] = elm.value;
+            }
+        }
+        return data;
+    }, {});
+};
+
+
+if("onpopstate" in window) {
+    window.onpopstate = function(event) {
+        if(event.state) {
+            if(event.state.index >= Controller.current_index) {
+                Controller.current_index++;
+                Controller.add(event.state.obj);
+                return null;
+            }
+        }
+        Controller.current_index--;
+        Controller.remove_last_view();
+        Controller.error.hide();
+    };
+}
+else {
+    window.onerror("onpopstate not in window!", "controller.js");
+}
+
+
+document.onsubmit = function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+        var elements = event.target.elements;
+        var form_data = JSON.stringify(form_to_json(elements));
+        Controller.fetch(event.target.action, "post", form_data);
+    }
+    catch(error) { 
+        Controller.error.show("on submit form error: " + error); 
+    }
+};
+    
+
 var ViewBase = function(obj_id) {
     var index = Controller.auto_id++;
     obj_id = obj_id || "view_" + index;
@@ -28,6 +88,7 @@ var ViewBase = function(obj_id) {
         }
     };
 };
+
 
 Controller.model.fetch_script = function(obj) {
     var head = document.getElementsByTagName('head')[0];
@@ -89,8 +150,10 @@ Controller.add = function(obj) {
             view_div.appendChild(head_div);
             view_div.appendChild(content_div);
         }
-        catch(error) { 
-            Controller.error.show("veiw ("+ view.type +") error: " + error); 
+        catch(error) {
+            var error_text = "veiw ("+ view.type +") error: " + error;
+            Controller.error.show(error_text);
+            window.onerror(error_text, "controller.js");
         }
         document.getElementById('all_views').appendChild(view_div);
         
@@ -120,17 +183,4 @@ if(!Controller.initial_item) {
     Controller.show('view_home');
 }
 
-if("onpopstate" in window) {
-    window.onpopstate = function(event) {
-        if(event.state) {
-            if(event.state.index >= Controller.current_index) {
-                Controller.current_index++;
-                Controller.add(event.state.obj);
-                return null;
-            }
-        }
-        Controller.current_index--;
-        Controller.remove_last_view();
-    };
-}
 })();

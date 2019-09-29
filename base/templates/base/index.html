@@ -3,12 +3,14 @@
 <head>
 <title>Alzod</title>
 <style>
-html, body {margin: 0px; padding: 0px; text-align:center;}
+html, body, * {
+    margin: 0px; padding: 0px; box-sizing: border-box;
+}
 a:link,
 a:visited,
 a:hover,
 a:active {text-decoration: none; color: black;}
-/*.none {display: none;}*/
+.none {display: none;}
 .view_root {width:100vw; min-height:100vh;}
 .loading_root {
     z-index: 99; position:fixed; top:0px; left:0px; width:100vw; height:100vw; 
@@ -25,7 +27,10 @@ a:active {text-decoration: none; color: black;}
 .search_box {display: block; height:250px;}
 .search_box input[type=textbox] {float:left;width:75vw; height:30px;}
 .search_box input[type=submit] {float:left;width:15vw; line-height:30px;}
-.icons_root {margin:0 auto; width:100vw; max-width:450px; overflow: hidden;}
+.icons_root {
+    margin:0 auto; width:100vw; max-width:450px; text-align: center;
+    overflow: hidden;
+}
 .icon_larg {
     float:left; margin:10px 25px; width:100px; height:100px; 
     border-radius:10px; background:#dcdcdc;
@@ -34,6 +39,18 @@ a:active {text-decoration: none; color: black;}
 </style>
 <link rel="icon" href="/static/demo_icon.gif" type="image/gif">
 <script type="text/javascript">
+
+window.onerror = function (message, url, line, column) {
+    var e = "message=" + message;
+    e += "&url=" + url;
+    e += "&line=" + line;
+    e += "&column=" + column;
+    var request = new XMLHttpRequest();
+    request.open("GET", "/?err=" + e, true);
+    request.send(e);
+    return false;
+};
+
 
 var Controller = {
     current_history: window.history.length,
@@ -98,7 +115,9 @@ var Controller = {
         }
     },
     error: {
+        display: false,
         show: function(html) {
+            Controller.error.display = true;
             var error_div = document.getElementById('error_div');
             console.error(html);
             error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
@@ -106,6 +125,7 @@ var Controller = {
             // send error html to server ... 
         },
         hide: function() {
+            Controller.error.display = false;
             var error_div = document.getElementById('error_div');
             error_div.innerHTML = "hide";
             error_div.setAttribute("class", "none");
@@ -117,26 +137,8 @@ var Controller = {
 document.onsubmit = function(event) {
     event.preventDefault();
     event.stopPropagation();
-    var elements = event.target.elements;
-    var form_data = {};
-
-    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-    // https://lengstorf.com/get-form-values-as-json/
-    for(var i = 0; i < event.target.elements.length; i++) {
-        if(1) {
-            form_data[elements[i].name] = elements[i].value;
-        }
-    }
-
-    // ... 
-    Controller.fetch(event.target.action, "post", form_data);
+    // delete
+    Controller.error.show("Form submit function not updated!");
 };
 </script>
 </head>
@@ -159,20 +161,23 @@ document.onsubmit = function(event) {
         </div>
 
         <form class="search_box" action='/static/search.json' method='GET'>
-            <input type="textbox" name="aaa" placeholder="Search" />
-            <input type="textbox" name="bbb" placeholder="Search" />
-            <input type="textbox" name="ccc" placeholder="Search" />
-            <textarea name='ttt'>
-            </textarea>
-            <select name="cars" size="4" multiple>
-            <option value="volvo">Volvo</option>
-            <option value="saab">Saab</option>
-            <option value="fiat">Fiat</option>
-            <option value="audi">Audi</option>
+            <input type="textbox" name="aaa" value="VALUE -{<>} aaa" placeholder="Search" />
+            <input type="textbox" name="bbb" value="VALUE -{<>} bbb" placeholder="Search" />
+            <input type="textbox" name="ccc" value="VALUE -{<>} ccc" placeholder="Search" />
+            
+            <textarea name='ttt'>Text area.. //\\/N/n\n bbbb</textarea>
+            
+            <select name="d_cars" size="4" multiple>
+                <option value="volvo">Volvo</option>
+                <option value="saab">Saab</option>
+                <option value="fiat">Fiat</option>
+                <option value="audi">Audi</option>
             </select>
+
             <input type="checkbox" name="vehicle1" value="Bike"> I have a bike<br>
             <input type="checkbox" name="vehicle2" value="Car"> I have a car<br>
             <input type="checkbox" name="vehicle3" value="Boat" checked> I have a boat<br>
+            <input type="checkbox" name="vehicle3" value="Big Boat" checked> I have a big boat<br>
             <input type="submit" value="Search" />
         </form>
 
@@ -220,7 +225,7 @@ document.onsubmit = function(event) {
     }
 </script>
 <link rel="stylesheet" type="text/css" href="/static/main.css">
-<script src="/static/main.js"></script>
+<script src="/static/controller.js"></script>
 <script src="/static/head.js"></script>
 </body>
 </html> 

@@ -1,4 +1,5 @@
-Controller.view['head'] = function(view){
+Controller.view['head'] = function(view) {
+    console.log(view);
     const content_div = document.createElement('div');
     content_div.style = "font-size:30px;";
     // content_div.innerHTML = view.content + " " + view.id;

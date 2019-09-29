@@ -1,0 +1,44 @@
+.list_box {
+    position: relative;
+    margin-bottom: 15px;
+    width: 100%;
+    text-align: left;
+    overflow: hidden;
+    background: brown;
+}
+.list_box .id {
+    display: none;
+}
+.list_box .title {
+    padding-left: 31%;
+    width: 90%;
+    background: rgb(42, 130, 165);
+}
+.list_box .img {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 30%;
+    background: rgb(165, 42, 155);
+}
+.list_box .date {
+    padding-left: 31%;
+    width: 90%;
+    background: rgb(42, 165, 138);
+}
+.list_box .price {
+    padding-left: 31%;
+    padding-right: 10px;
+    float: left;
+    background: rgb(42, 54, 165);
+}
+.list_box .currency {
+    float: left;
+    background: rgb(165, 142, 42);
+}
+.list_box .country {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgb(52, 165, 42);
+}
