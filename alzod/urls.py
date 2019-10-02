@@ -1,32 +1,17 @@
-from django.views.generic import TemplateView
+from django.urls import include, path
 from django.contrib import admin
-from django.urls import path
+from django.views.generic import TemplateView
+from .routers import router
+from members.views import UserLoginView
+
+
+landing_page = TemplateView.as_view(template_name="index.html")
 
 urlpatterns = [
+    path('api/', include(router.urls)),
+    path('login/', UserLoginView.as_view()),
     path('admin/', admin.site.urls),
-    
-    # Members
-    # path('auth/', AuthorizationView.as_view() ),
-    # path('login/', "view"),
-    # path('register/', "view"),
-    
-    # Tasks
-    # path('tasks/', "view"),
-    # path('report/', "view"),
-    
-    # links    
-    # path('starred/', "view"),
-    # path('favorite/', "view"),
-    # path('follow/', "view"),
-    # path('cart/', "view"),
-
-    # Items
-    # path('new/', "view"),
-    # path('edit/<int:id>/', "view"),
-
-    # Base
-    path('search/', TemplateView.as_view(template_name="base/search.json") ),
-    # path('search/', "view"),
-    path('<int:id>', TemplateView.as_view(template_name="base/index.html") ),
-    path('', TemplateView.as_view(template_name="base/index.html") ),
+    path('<int:id>', landing_page ),
+    path('<int:id>/', landing_page ),
+    path('', landing_page ),
 ]

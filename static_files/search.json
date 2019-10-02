@@ -6,7 +6,7 @@
         {
             "id": 12314,
             "title": "Title of the image search",
-            "img": "/media/image.png",
+            "img": "/static/img/p_long.jpg",
             "date": "2019/3/10",
             "price": 12314,
             "currency": "RSA",
@@ -15,7 +15,7 @@
         {
             "id": 2654543,
             "title": "Title of the image search",
-            "img": "/media/image.png",
+            "img": "/static/img/p_wide.jpg",
             "date": "2019/3/10",
             "price": 12314,
             "currency": "RSA",
@@ -24,7 +24,7 @@
         {
             "id": 3,
             "title": "Title of the image search",
-            "img": "/media/image.png",
+            "img": "/static/img/p_long.jpg",
             "date": "2019/3/10",
             "price": 12314,
             "currency": "RSA",
@@ -33,7 +33,7 @@
         {
             "id": 44422,
             "title": "Title of the image search",
-            "img": "/media/image.png",
+            "img": "/static/img/p_wide.jpg",
             "date": "2019/3/10",
             "price": 12314,
             "currency": "RSA",

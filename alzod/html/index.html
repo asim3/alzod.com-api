@@ -1,0 +1,328 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Alzod</title>
+<style>
+html { font-size: 17px;}
+@media (max-width: 900px) { html { font-size: 15px; } }
+@media (max-width: 400px) { html { font-size: 13px; } }
+html, body, * {
+    margin: 0rem; padding: 0rem; box-sizing: border-box;
+}
+a:link,
+a:visited,
+a:hover,
+a:active {text-decoration: none; color: black;}
+.none {display: none;}
+.view_root {width:100%; min-height:100vh;}
+.loading_root {
+    z-index: 99; position:fixed; top:0rem; left:0rem; padding: 1rem;
+    width:100vw; height:100vh; background:rgb(59,153,51); /*overflow: hidden;*/
+}
+.error_root {
+    z-index: 100; position:fixed; top:0rem; left:0rem; padding: 1rem;
+    width:100%; height:100vh; background: #e28484; cursor: pointer;
+}
+.error_text {padding-top:30vh; font-size:3rem; text-align:center;}
+.logo {display: block; height:5rem; line-height: 5rem;}
+.logo svg {display: block; float:left;width:5rem; height:5rem; }
+.logo span {display: block; float:left; font-size: 3rem;}
+.search_box {display: block; height:25rem;}
+.search_box input[type=textbox] {float:left;width:75vw; height:3rem;}
+.search_box input[type=submit] {float:left;width:15vw; line-height:3rem;}
+.icons_root {
+    margin:0 auto; width:100%; max-width:45rem; text-align: center;
+    overflow: hidden;
+}
+.icon_larg {
+    float:left; margin:1rem 2rem; width:5rem; height:5rem; 
+    border-radius:1rem; background:#dcdcdc;
+}
+.icon_larg svg {display: block; margin: 0 auto; width:7rem; height:7rem;}
+</style>
+<link rel="icon" href="/static/img/demo_icon.gif" type="image/gif">
+<script type="text/javascript">
+
+var handle_fetch_error = function(status, request) {
+    Controller.error.show("model.fetch status: " + status);
+};
+
+
+window.onerror = function (message, url, line, column) {
+    var e = "message=" + message;
+    e += "&url=" + url;
+    e += "&line=" + line;
+    e += "&column=" + column;
+    var request = new XMLHttpRequest();
+    request.open("GET", "/?err=" + e, true);
+    request.send(e);
+    return false;
+};
+
+
+var Controller = {
+    current_history: window.history.length,
+    current_index: 1,
+    initial_item: null,
+    running: {},
+    view: {},
+    show: function(view) { Controller.running[view].show(); },
+    remove: function(view) { Controller.running[view].remove(); },
+    fetch: function(href, type, data) { 
+        Controller.loading.show();
+        // get from memory, if not fetch ...
+        href = href.replace(/.*\/\/[^\/]+\//, '');
+        href = isNaN(href) ? href : "/api/item/" + href;
+        Controller.model.fetch(href, type, data);
+    },
+    model: {
+      fetch: function(href, type, data) {
+        type = type || "get";
+        type = type.toUpperCase();
+
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+          if(this.readyState == 4) {
+            if(this.status == 200 || this.status == 201) {
+              try {
+                var json_response = JSON.parse(request.responseText);
+                if('type' in json_response) {
+                  if('add' in Controller) {
+                    json_response.href = href;
+                    Controller.add(json_response);
+                  }
+                  else { Controller.error.show("add not found!"); }
+                }
+                else {
+                  Controller.error.show('response does not contain type!');
+                }
+              }
+              catch(error) {
+                  Controller.error.show("JSON.parse: " + error);
+              }
+            }
+            else {
+                handle_fetch_error(this.status, request);
+            }
+          }
+        };
+        request.open(type, href, true);
+        if(data === undefined) { request.send(); }
+        else {
+            data = JSON.stringify(data);
+            var Content_type = 'application/json; charset=utf-8';
+            request.setRequestHeader('Content-type', Content_type);
+            request.setRequestHeader('X-CSRFToken', getCookie("csrftoken"));
+            request.send(data);
+        }
+      }
+    },
+    loading: {
+        show: function() {
+            var loading_div = document.getElementById('loading_div');
+            loading_div.setAttribute("class", "loading_root");
+        },
+        hide: function() {
+            var loading_div = document.getElementById('loading_div');
+            loading_div.setAttribute("class", "none");
+        }
+    },
+    error: {
+        display: false,
+        show: function(html) {
+            Controller.error.display = true;
+            var error_div = document.getElementById('error_div');
+            console.error(html);
+            error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
+            error_div.setAttribute("class", "error_root");
+            // send error html to server ... 
+        },
+        hide: function() {
+            Controller.error.display = false;
+            var error_div = document.getElementById('error_div');
+            error_div.innerHTML = "hide";
+            error_div.setAttribute("class", "none");
+            Controller.loading.hide();
+        }
+    }
+};
+
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+if("onpopstate" in window) {
+    window.onpopstate = function(event) {
+        if(event.state) {
+            if(event.state.index >= Controller.current_index) {
+                Controller.current_index++;
+                Controller.add(event.state.obj);
+                return null;
+            }
+        }
+        Controller.current_index--;
+        Controller.remove_last_view();
+        Controller.error.hide();
+    };
+}
+else { window.onerror("onpopstate not in window!", "controller.js"); }
+
+
+document.onsubmit = function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    // delete
+    Controller.error.show("Form submit function not updated!");
+};
+</script>
+</head>
+
+
+<body>
+<div id="loading_div" class="none">
+    <div class="error_text">loading</div>
+</div>
+
+<div id="error_div" class="none" onclick="Controller.error.hide();">e</div>
+
+<div id="all_views">
+    <div id="view_home" class="view_root">
+        <div class="logo">
+            <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
+                <circle cx="50" cy="50" r="40" fill="green" />
+            </svg> 
+            <span>Alzod</span>
+        </div>
+
+        <ol>
+            <li>post: login user</li>
+            <li>json: get user auth</li>
+            <li>-------</li>
+            <li>post: save new item</li>
+            <li>post: edit item</li>
+            <li>post: delete item</li>
+            <li>json: get item detailes</li>
+            <li>json: get all items</li>
+            <li>post: save new img</li>
+            <li>-------</li>
+            <li>css: style search elements</li>
+            <li>css: style item elements</li>
+            <li>css: style new item elements</li>
+            <li>-------</li>
+        </ol>
+
+        <form class="search_box" action='/api/item/' method='POST'>
+            <input type="textbox" name="type" value="item" />
+            <input type="textbox" name="title" value="" placeholder="title" />
+            <input type="textbox" name="price" value="" placeholder="price" />
+            <input type="textbox" name="country" value="" placeholder="country" />
+            
+            <textarea name='description2'>Text area.. //\\/N/n\n bbbb</textarea>
+            
+            <select name="description" size="4" multiple>
+                <option value="volvo">Volvo</option>
+                <option value="saab">Saab</option>
+                <option value="fiat">Fiat</option>
+                <option value="audi">Audi</option>
+            </select>
+
+            <input type="checkbox" name="vehicle1" value="Bike"> I have a bike<br>
+            <input type="checkbox" name="vehicle2" value="Car"> I have a car<br>
+            <input type="checkbox" name="vehicle3" value="Boat" checked> I have a boat<br>
+            <input type="checkbox" name="vehicle3" value="Big Boat" checked> I have a big boat<br>
+            <input type="submit" value="Search" />
+        </form>
+
+        <div class="icons_root">
+            <a href="1" title="المفضلة" class="icon_larg"
+                onclick="Controller.fetch(this.href);return false;">
+                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
+                    <circle cx="50" cy="50" r="40" fill="blue" />
+                </svg> 
+                <span>المفضلة</span>
+            </a>
+
+            <a href="2" title="المفضلة" class="icon_larg"
+                onclick="Controller.fetch(this.href);return false;">
+                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
+                    <circle cx="50" cy="50" r="40" fill="yellow" />
+                </svg> 
+                <span>السلة</span>
+            </a>
+
+            <a href="3" title="المفضلة" class="icon_larg"
+                onclick="Controller.fetch(this.href);return false;">
+                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
+                    <circle cx="50" cy="50" r="40" fill="gray" />
+                </svg> 
+                <span>تسجيل</span>
+            </a>
+
+            <a href="4" title="إضافة" class="icon_larg"
+                onclick="Controller.fetch(this.href);return false;">
+                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
+                    <circle cx="50" cy="50" r="40" fill="gray" />
+                </svg> 
+                <span>إضافة</span>
+            </a>
+
+            <a href="5" title="المفضلة" class="icon_larg"
+                onclick="Controller.fetch(this.href);return false;">
+                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
+                    <circle cx="50" cy="50" r="40" fill="red" />
+                </svg> 
+                <span>Error</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    (function() {
+        var initial_url = window.location.pathname.replace(/^\//, "");
+        if(!isNaN(initial_url) && 0 < initial_url.length) {
+            Controller.initial_item = initial_url;
+            Controller.fetch(initial_url);
+        }
+        // get auth
+        Controller.fetch("/api/user/");
+        /*
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+            if(this.readyState == 4 && this.status == 200) {
+              try {
+                var json_response = JSON.parse(request.responseText);
+                Controller.username = json_response;
+              }
+              catch(error) {
+                Controller.username = "gest";
+                Controller.error.show("user auth JSON.parse: " + error);
+              }
+            }
+            else if(this.readyState == 4) {
+              Controller.username = "gest";
+              Controller.error.show("user auth status: " + this.status);
+            }
+        };
+        request.open("GET", "/auth/", true);
+        request.send();
+        */
+    })();
+</script>
+<link rel="stylesheet" type="text/css" href="/static/css/main.css">
+<script src="/static/js/controller.js"></script>
+<script src="/static/js/head.js"></script>
+</body>
+</html> 

@@ -1,5 +1,22 @@
 (function() {
 
+
+handle_fetch_error = function(status, request) {
+    if(status == 400) {
+        try {
+            var json_response = JSON.parse(request.responseText);
+            Controller.error.show(JSON.stringify(json_response));
+            
+        }
+        catch(error) {
+            Controller.error.show("JSON.parse: " + error);
+        }
+    }
+    else {
+        Controller.error.show("model.fetch status: " + status);
+    }
+};
+
 var form_to_json = function(elements) {
     return [].reduce.call(elements, function(data, elm) {
         var is_valid = false;
@@ -27,31 +44,12 @@ var form_to_json = function(elements) {
 };
 
 
-if("onpopstate" in window) {
-    window.onpopstate = function(event) {
-        if(event.state) {
-            if(event.state.index >= Controller.current_index) {
-                Controller.current_index++;
-                Controller.add(event.state.obj);
-                return null;
-            }
-        }
-        Controller.current_index--;
-        Controller.remove_last_view();
-        Controller.error.hide();
-    };
-}
-else {
-    window.onerror("onpopstate not in window!", "controller.js");
-}
-
-
 document.onsubmit = function(event) {
     event.preventDefault();
     event.stopPropagation();
     try {
         var elements = event.target.elements;
-        var form_data = JSON.stringify(form_to_json(elements));
+        var form_data = form_to_json(elements);
         Controller.fetch(event.target.action, "post", form_data);
     }
     catch(error) { 
@@ -103,10 +101,15 @@ Controller.model.fetch_script = function(obj) {
           Controller.error.show('Controller.view does not contain '+obj.type);
         }
     };
-    script.onerror = function() { Controller.error.show('adding script!'); };
+    script.onerror = function() {
+        var error_text = 'adding script to head error!';
+        Controller.error.show(error_text);
+        window.onerror(error_text, "controller.js")
+    };
     head.appendChild(script);
-    script.src = "/static/"+ obj.type +".js";
+    script.src = "/static/js/"+ obj.type +".js";
 };
+
 
 Controller.show_last_view = function() {
     var last = "view_home";
@@ -118,6 +121,7 @@ Controller.show_last_view = function() {
     }
     Controller.show(last);
 };
+
 
 Controller.remove_last_view = function() {
     var last = null;
@@ -132,6 +136,7 @@ Controller.remove_last_view = function() {
     }
     Controller.show_last_view();
 };
+
 
 Controller.add = function(obj) {
     if(obj.type in Controller.view) {
@@ -174,13 +179,25 @@ Controller.add = function(obj) {
     }
 };
 
+
+Controller.auth = function() {
+    console.log("username: " + Controller.username);
+    if("username" in Controller) {
+    }
+    else { setTimeout(Controller.auth, 100); }
+};
+
 Controller.auto_id = 100;
+
 
 Controller.running.view_home = ViewBase("view_home");
 Controller.running.view_home.index = 1;
 
+
 if(!Controller.initial_item) {
     Controller.show('view_home');
 }
+Controller.auth();
+
 
 })();
