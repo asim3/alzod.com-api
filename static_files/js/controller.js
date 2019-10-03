@@ -180,13 +180,6 @@ Controller.add = function(obj) {
 };
 
 
-Controller.auth = function() {
-    console.log("username: " + Controller.username);
-    if("username" in Controller) {
-    }
-    else { setTimeout(Controller.auth, 100); }
-};
-
 Controller.auto_id = 100;
 
 

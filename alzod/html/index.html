@@ -43,11 +43,6 @@ a:active {text-decoration: none; color: black;}
 <link rel="icon" href="/static/img/demo_icon.gif" type="image/gif">
 <script type="text/javascript">
 
-var handle_fetch_error = function(status, request) {
-    Controller.error.show("model.fetch status: " + status);
-};
-
-
 window.onerror = function (message, url, line, column) {
     var e = "message=" + message;
     e += "&url=" + url;
@@ -61,20 +56,12 @@ window.onerror = function (message, url, line, column) {
 
 
 var Controller = {
-    current_history: window.history.length,
     current_index: 1,
     initial_item: null,
     running: {},
-    view: {},
     show: function(view) { Controller.running[view].show(); },
     remove: function(view) { Controller.running[view].remove(); },
-    fetch: function(href, type, data) { 
-        Controller.loading.show();
-        // get from memory, if not fetch ...
-        href = href.replace(/.*\/\/[^\/]+\//, '');
-        href = isNaN(href) ? href : "/api/item/" + href;
-        Controller.model.fetch(href, type, data);
-    },
+    view: {},
     model: {
       fetch: function(href, type, data) {
         type = type || "get";
@@ -83,27 +70,7 @@ var Controller = {
         var request = new XMLHttpRequest();
         request.onreadystatechange = function() {
           if(this.readyState == 4) {
-            if(this.status == 200 || this.status == 201) {
-              try {
-                var json_response = JSON.parse(request.responseText);
-                if('type' in json_response) {
-                  if('add' in Controller) {
-                    json_response.href = href;
-                    Controller.add(json_response);
-                  }
-                  else { Controller.error.show("add not found!"); }
-                }
-                else {
-                  Controller.error.show('response does not contain type!');
-                }
-              }
-              catch(error) {
-                  Controller.error.show("JSON.parse: " + error);
-              }
-            }
-            else {
-                handle_fetch_error(this.status, request);
-            }
+              Controller.handle_fetch(this.status, href, request.responseText);
           }
         };
         request.open(type, href, true);
@@ -112,10 +79,40 @@ var Controller = {
             data = JSON.stringify(data);
             var Content_type = 'application/json; charset=utf-8';
             request.setRequestHeader('Content-type', Content_type);
-            request.setRequestHeader('X-CSRFToken', getCookie("csrftoken"));
+            request.setRequestHeader('X-CSRFToken', get_cookie("csrftoken"));
             request.send(data);
         }
       }
+    },
+    fetch: function(href, type, data) { 
+        Controller.loading.show();
+        // get from memory, if not fetch ...
+        href = href.replace(/.*\/\/[^\/]+\//, '');
+        href = isNaN(href) ? href : "/api/item/" + href;
+        Controller.model.fetch(href, type, data);
+    },
+    handle_fetch: function(status, href, response) {
+        if(status == 200 || status == 201) {
+          try {
+            var response_json = JSON.parse(response);
+            if('type' in response_json) {
+                if('add' in Controller) {
+                    response_json.href = href;
+                    Controller.add(response_json);
+                }
+                else { Controller.error.show("add not found!"); }
+            }
+            else {
+                Controller.error.show('response does not contain type!');
+            }
+          }
+          catch(error) {
+            Controller.error.show("JSON.parse: " + error);
+          }
+        }
+        else {
+            Controller.error.show("Handle fetch status: " + status);
+        }
     },
     loading: {
         show: function() {
@@ -147,7 +144,7 @@ var Controller = {
     }
 };
 
-function getCookie(name) {
+function get_cookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie !== '') {
         var cookies = document.cookie.split(';');
@@ -208,7 +205,6 @@ document.onsubmit = function(event) {
 
         <ol>
             <li>post: login user</li>
-            <li>json: get user auth</li>
             <li>-------</li>
             <li>post: save new item</li>
             <li>post: edit item</li>
@@ -246,7 +242,7 @@ document.onsubmit = function(event) {
         </form>
 
         <div class="icons_root">
-            <a href="1" title="المفضلة" class="icon_larg"
+            <a href="/1" title="المفضلة" class="icon_larg"
                 onclick="Controller.fetch(this.href);return false;">
                 <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="blue" />
@@ -254,7 +250,7 @@ document.onsubmit = function(event) {
                 <span>المفضلة</span>
             </a>
 
-            <a href="2" title="المفضلة" class="icon_larg"
+            <a href="/2" title="المفضلة" class="icon_larg"
                 onclick="Controller.fetch(this.href);return false;">
                 <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="yellow" />
@@ -262,7 +258,7 @@ document.onsubmit = function(event) {
                 <span>السلة</span>
             </a>
 
-            <a href="3" title="المفضلة" class="icon_larg"
+            <a href="/3" title="المفضلة" class="icon_larg"
                 onclick="Controller.fetch(this.href);return false;">
                 <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="gray" />
@@ -270,7 +266,7 @@ document.onsubmit = function(event) {
                 <span>تسجيل</span>
             </a>
 
-            <a href="4" title="إضافة" class="icon_larg"
+            <a href="/4" title="إضافة" class="icon_larg"
                 onclick="Controller.fetch(this.href);return false;">
                 <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="gray" />
@@ -278,7 +274,7 @@ document.onsubmit = function(event) {
                 <span>إضافة</span>
             </a>
 
-            <a href="5" title="المفضلة" class="icon_larg"
+            <a href="/5" title="المفضلة" class="icon_larg"
                 onclick="Controller.fetch(this.href);return false;">
                 <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
                     <circle cx="50" cy="50" r="40" fill="red" />
@@ -297,28 +293,7 @@ document.onsubmit = function(event) {
             Controller.fetch(initial_url);
         }
         // get auth
-        Controller.fetch("/api/user/");
-        /*
-        var request = new XMLHttpRequest();
-        request.onreadystatechange = function() {
-            if(this.readyState == 4 && this.status == 200) {
-              try {
-                var json_response = JSON.parse(request.responseText);
-                Controller.username = json_response;
-              }
-              catch(error) {
-                Controller.username = "gest";
-                Controller.error.show("user auth JSON.parse: " + error);
-              }
-            }
-            else if(this.readyState == 4) {
-              Controller.username = "gest";
-              Controller.error.show("user auth status: " + this.status);
-            }
-        };
-        request.open("GET", "/auth/", true);
-        request.send();
-        */
+        Controller.fetch("/api/auth/");
     })();
 </script>
 <link rel="stylesheet" type="text/css" href="/static/css/main.css">

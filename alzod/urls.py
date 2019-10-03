@@ -2,7 +2,7 @@ from django.urls import include, path
 from django.contrib import admin
 from django.views.generic import TemplateView
 from .routers import router
-from members.views import UserLoginView
+from members.views import UserLoginView, AuthUserView
 
 
 landing_page = TemplateView.as_view(template_name="index.html")

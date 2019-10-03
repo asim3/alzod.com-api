@@ -1,8 +1,9 @@
 from rest_framework import routers
-from members.views import UserViewSet
+from members.views import AuthUserView, UserViewSet
 from items.views import ItemViewSet
 
 router = routers.DefaultRouter()
+router.register(r'^auth', AuthUserView)
 router.register(r'^user', UserViewSet)
 router.register(r'^item', ItemViewSet)
 
