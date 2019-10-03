@@ -3,7 +3,7 @@ from django.db import models
 class Item(models.Model):
   type = models.CharField(max_length=10)
   title = models.CharField(max_length=100)
-  img = models.ImageField(upload_to="image_path/", blank=True, null=True)
+  img = models.ImageField(upload_to="static_files/images/", blank=True, null=True)
   add_date = models.DateTimeField(auto_now_add=True)
   update_date = models.DateTimeField(auto_now=True)
   price = models.IntegerField(blank=True,null=True)

@@ -40,7 +40,7 @@ a:active {text-decoration: none; color: black;}
 }
 .icon_larg svg {display: block; margin: 0 auto; width:7rem; height:7rem;}
 </style>
-<link rel="icon" href="/static/img/demo_icon.gif" type="image/gif">
+<!--link rel="icon" href="/static/img/demo_icon.gif" type="image/gif"-->
 <script type="text/javascript">
 
 window.onerror = function (message, url, line, column) {
@@ -56,92 +56,77 @@ window.onerror = function (message, url, line, column) {
 
 
 var Controller = {
-    current_index: 1,
-    initial_item: null,
-    running: {},
-    show: function(view) { Controller.running[view].show(); },
-    remove: function(view) { Controller.running[view].remove(); },
-    view: {},
-    model: {
-      fetch: function(href, type, data) {
-        type = type || "get";
-        type = type.toUpperCase();
-
-        var request = new XMLHttpRequest();
-        request.onreadystatechange = function() {
-          if(this.readyState == 4) {
-              Controller.handle_fetch(this.status, href, request.responseText);
-          }
-        };
-        request.open(type, href, true);
-        if(data === undefined) { request.send(); }
-        else {
-            data = JSON.stringify(data);
-            var Content_type = 'application/json; charset=utf-8';
-            request.setRequestHeader('Content-type', Content_type);
-            request.setRequestHeader('X-CSRFToken', get_cookie("csrftoken"));
-            request.send(data);
-        }
+ current_index: 1,
+ initial_item: null,
+ running: {},
+ show: function(view) { Controller.running[view].show(); },
+ remove: function(view) { Controller.running[view].remove(); },
+ view: {},
+ model: {
+  fetch: function(href, type, data) {
+    type = type || "get";
+    type = type.toUpperCase(); 
+    var request = new XMLHttpRequest();
+    request.onreadystatechange = function() {
+      if(this.readyState == 4) {
+        Controller.handle_init_fetch(this.status, href, request.responseText);
       }
-    },
-    fetch: function(href, type, data) { 
-        Controller.loading.show();
-        // get from memory, if not fetch ...
-        href = href.replace(/.*\/\/[^\/]+\//, '');
-        href = isNaN(href) ? href : "/api/item/" + href;
-        Controller.model.fetch(href, type, data);
-    },
-    handle_fetch: function(status, href, response) {
-        if(status == 200 || status == 201) {
-          try {
-            var response_json = JSON.parse(response);
-            if('type' in response_json) {
-                if('add' in Controller) {
-                    response_json.href = href;
-                    Controller.add(response_json);
-                }
-                else { Controller.error.show("add not found!"); }
-            }
-            else {
-                Controller.error.show('response does not contain type!');
-            }
-          }
-          catch(error) {
-            Controller.error.show("JSON.parse: " + error);
-          }
-        }
-        else {
-            Controller.error.show("Handle fetch status: " + status);
-        }
-    },
-    loading: {
-        show: function() {
-            var loading_div = document.getElementById('loading_div');
-            loading_div.setAttribute("class", "loading_root");
-        },
-        hide: function() {
-            var loading_div = document.getElementById('loading_div');
-            loading_div.setAttribute("class", "none");
-        }
-    },
-    error: {
-        display: false,
-        show: function(html) {
-            Controller.error.display = true;
-            var error_div = document.getElementById('error_div');
-            console.error(html);
-            error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
-            error_div.setAttribute("class", "error_root");
-            // send error html to server ... 
-        },
-        hide: function() {
-            Controller.error.display = false;
-            var error_div = document.getElementById('error_div');
-            error_div.innerHTML = "hide";
-            error_div.setAttribute("class", "none");
-            Controller.loading.hide();
-        }
+    };
+    request.open(type, href, true);
+    if(data === undefined) { request.send(); }
+    else {
+        data = JSON.stringify(data);
+        var Content_type = 'application/json; charset=utf-8';
+        request.setRequestHeader('Content-type', Content_type);
+        request.setRequestHeader('X-CSRFToken', get_cookie("csrftoken"));
+        request.send(data);
     }
+  }
+ },
+ fetch: function(href, type, data) { 
+    Controller.loading.show();
+    // get from memory, if not fetch ...
+    href = href.replace(/.*\/\/[^\/]+\//, '');
+    href = isNaN(href) ? href : "/api/item/" + href + "/";
+    Controller.model.fetch(href, type, data);
+ },
+ handle_init_fetch: function(status, href, response) {
+    if("handle_fetch" in Controller) {
+        console.log('handle_fetch')
+        Controller.handle_fetch(status, href, response);
+    }
+    else {
+        console.log('setTimeout')
+        setTimeout(Controller.handle_init_fetch, 100, status, href, response);
+    }
+ },
+ loading: {
+     show: function() {
+         var loading_div = document.getElementById('loading_div');
+         loading_div.setAttribute("class", "loading_root");
+     },
+     hide: function() {
+         var loading_div = document.getElementById('loading_div');
+         loading_div.setAttribute("class", "none");
+     }
+ },
+ error: {
+     display: false,
+     show: function(html) {
+         Controller.error.display = true;
+         var error_div = document.getElementById('error_div');
+         console.error(html);
+         error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
+         error_div.setAttribute("class", "error_root");
+     },
+     hide: function() {
+         Controller.error.display = false;
+         var error_div = document.getElementById('error_div');
+         error_div.innerHTML = "hide";
+         error_div.setAttribute("class", "none");
+         Controller.loading.hide();
+     }
+ }
 };
 
 function get_cookie(name) {
@@ -180,7 +165,7 @@ else { window.onerror("onpopstate not in window!", "controller.js"); }
 document.onsubmit = function(event) {
     event.preventDefault();
     event.stopPropagation();
-    // delete
+    // delete: only for testing
     Controller.error.show("Form submit function not updated!");
 };
 </script>

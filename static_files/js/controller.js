@@ -1,22 +1,5 @@
 (function() {
 
-
-handle_fetch_error = function(status, request) {
-    if(status == 400) {
-        try {
-            var json_response = JSON.parse(request.responseText);
-            Controller.error.show(JSON.stringify(json_response));
-            
-        }
-        catch(error) {
-            Controller.error.show("JSON.parse: " + error);
-        }
-    }
-    else {
-        Controller.error.show("model.fetch status: " + status);
-    }
-};
-
 var form_to_json = function(elements) {
     return [].reduce.call(elements, function(data, elm) {
         var is_valid = false;
@@ -87,6 +70,37 @@ var ViewBase = function(obj_id) {
     };
 };
 
+Controller.handle_fetch = function(status, href, response) {
+    if(status == 200 || status == 201) {
+        try {
+            var response_json = JSON.parse(response);
+            if('type' in response_json) {
+                if('add' in Controller) {
+                    response_json.href = href;
+                    if(href !== "/api/auth/") {
+                        Controller.add(response_json);
+                    }
+                    else { console.log('fff'); }
+                }
+                else { Controller.error.show("Controller.add not found!"); }
+            }
+            else {
+                Controller.error.show('Controller.type not found');
+            }
+        }
+        catch(error) {
+            Controller.error.show("JSON.parse(response): " + error);
+        }
+    }
+    else if(status == 400 || status == 401 || status == 403) {
+        console.warn(response);
+        Controller.loading.hide();
+    }
+    else {
+        Controller.error.show("Handle fetch status: " + status);
+    }
+};
+
 
 Controller.model.fetch_script = function(obj) {
     var head = document.getElementsByTagName('head')[0];
@@ -140,6 +154,7 @@ Controller.remove_last_view = function() {
 
 Controller.add = function(obj) {
     if(obj.type in Controller.view) {
+        obj.href = obj.href.replace("api/item/", "");
         var view = ViewBase();
         view.type = obj.type;
         view.href = obj.href;
@@ -164,9 +179,8 @@ Controller.add = function(obj) {
         
         Controller.running[view.id] = view;
         Controller.show(view.id);
-        
-        if(obj.status !== "in memory") {
-            obj.status = "in memory";
+        if(!obj.in_memory) {
+            obj.in_memory = true;
             var page_info = {
                 index: Controller.current_index++, 
                 obj: obj
@@ -190,7 +204,5 @@ Controller.running.view_home.index = 1;
 if(!Controller.initial_item) {
     Controller.show('view_home');
 }
-Controller.auth();
-
 
 })();
