@@ -1,4 +1,11 @@
-(function() {
+(function(controller) {
+    if("add" in View) {
+        controller();
+    }
+    else {
+        console.log('add not in View')
+    }
+})(function() {
 
 var form_to_json = function(elements) {
     return [].reduce.call(elements, function(data, elm) {
@@ -41,55 +48,26 @@ document.onsubmit = function(event) {
 };
     
 
-var ViewBase = function(obj_id) {
-    var index = Controller.auto_id++;
-    obj_id = obj_id || "view_" + index;
-    return {
-        "id": obj_id,
-        "index": index,
-        "hide": function() {
-            var div = document.getElementById(obj_id);
-            if(div) { div.setAttribute("class", "none"); }
-            else { Controller.error.show(obj_id + " not found!"); }
-        },
-        "show": function() {
-            for (var view in Controller.running) {
-                if(Controller.running.hasOwnProperty(view)) {
-                    Controller.running[view].hide(); 
-                }
-            }
-            var div = document.getElementById(obj_id);
-            div.setAttribute("class", "view_root");
-            Controller.loading.hide();
-        },
-        "remove": function() {
-            document.getElementById(obj_id).remove();
-            delete Controller.running[obj_id];
-            Controller.show_last_view();
-        }
-    };
-};
-
 Controller.handle_fetch = function(status, href, response) {
     if(status == 200 || status == 201) {
         try {
             var response_json = JSON.parse(response);
             if('type' in response_json) {
-                if('add' in Controller) {
-                    response_json.href = href;
-                    if(href !== "/api/auth/") {
-                        Controller.add(response_json);
-                    }
-                    else { console.log('fff'); }
+                response_json.href = href;
+                if(href !== "/api/auth/") {
+                    View.add(response_json);
                 }
-                else { Controller.error.show("Controller.add not found!"); }
+                else { console.log(href + " == /api/auth/"); }
             }
             else {
                 Controller.error.show('Controller.type not found');
             }
         }
         catch(error) {
-            Controller.error.show("JSON.parse(response): " + error);
+            if(error instanceof SyntaxError) {
+                Controller.error.show("JSON.parse(response): " + error);
+            }
+            else { Controller.error.show("View.add(obj): " + error); }
         }
     }
     else if(status == 400 || status == 401 || status == 403) {
@@ -102,17 +80,17 @@ Controller.handle_fetch = function(status, href, response) {
 };
 
 
-Controller.model.fetch_script = function(obj) {
+Model.fetch_script = function(obj) {
     var head = document.getElementsByTagName('head')[0];
     var script = document.createElement('script');
     script.id = "js_script_" + obj.type;
     script.type = 'text/javascript';
     script.onload = function() { 
-        if(obj.type in Controller.view) {
-            Controller.add(obj);
+        if(obj.type in View.scripts) {
+            View.add(obj);
         }
         else{ 
-          Controller.error.show('Controller.view does not contain '+obj.type);
+          Controller.error.show('View.scripts does not contain: '+obj.type);
         }
     };
     script.onerror = function() {
@@ -125,84 +103,21 @@ Controller.model.fetch_script = function(obj) {
 };
 
 
-Controller.show_last_view = function() {
-    var last = "view_home";
-    var index = 0;
-    for (var view in Controller.running) { 
-        if(index < Controller.running[view].index) { 
-            last = view; 
+if("onpopstate" in window) {
+    window.onpopstate = function(event) {
+        if(event.state) {
+            if(event.state.index >= View.current_index) {
+                View.current_index++;
+                View.add(event.state.obj);
+                return null;
+            }
         }
-    }
-    Controller.show(last);
-};
-
-
-Controller.remove_last_view = function() {
-    var last = null;
-    var index = 90;
-    for (var view in Controller.running) { 
-        if(index < Controller.running[view].index) { 
-            last = view; 
-        }
-    }
-    if(last) {
-        Controller.remove(last);
-    }
-    Controller.show_last_view();
-};
-
-
-Controller.add = function(obj) {
-    if(obj.type in Controller.view) {
-        obj.href = obj.href.replace("api/item/", "");
-        var view = ViewBase();
-        view.type = obj.type;
-        view.href = obj.href;
-        view.content = obj.content;
-
-        var view_div = document.createElement('div');
-        view_div.className = "none";
-        view_div.id = view.id;
-
-        try {
-            var head_div = Controller.view.head(view);
-            var content_div = Controller.view[view.type](view);
-            view_div.appendChild(head_div);
-            view_div.appendChild(content_div);
-        }
-        catch(error) {
-            var error_text = "veiw ("+ view.type +") error: " + error;
-            Controller.error.show(error_text);
-            window.onerror(error_text, "controller.js");
-        }
-        document.getElementById('all_views').appendChild(view_div);
-        
-        Controller.running[view.id] = view;
-        Controller.show(view.id);
-        if(!obj.in_memory) {
-            obj.in_memory = true;
-            var page_info = {
-                index: Controller.current_index++, 
-                obj: obj
-            };
-            window.history.pushState(page_info, null, page_info.obj.href);
-        }
-    }
-    else {
-        Controller.model.fetch_script(obj);
-    }
-};
-
-
-Controller.auto_id = 100;
-
-
-Controller.running.view_home = ViewBase("view_home");
-Controller.running.view_home.index = 1;
-
-
-if(!Controller.initial_item) {
-    Controller.show('view_home');
+        View.current_index--;
+        View.remove_last_view();
+        Controller.error.hide();
+    };
 }
+else { window.onerror("onpopstate not in window!", "controller.js"); }
 
-})();
+
+});

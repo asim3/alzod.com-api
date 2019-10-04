@@ -54,80 +54,119 @@ window.onerror = function (message, url, line, column) {
     return false;
 };
 
-
-var Controller = {
- current_index: 1,
- initial_item: null,
- running: {},
- show: function(view) { Controller.running[view].show(); },
- remove: function(view) { Controller.running[view].remove(); },
- view: {},
- model: {
-  fetch: function(href, type, data) {
-    type = type || "get";
-    type = type.toUpperCase(); 
-    var request = new XMLHttpRequest();
-    request.onreadystatechange = function() {
-      if(this.readyState == 4) {
-        Controller.handle_init_fetch(this.status, href, request.responseText);
-      }
-    };
-    request.open(type, href, true);
-    if(data === undefined) { request.send(); }
-    else {
-        data = JSON.stringify(data);
-        var Content_type = 'application/json; charset=utf-8';
-        request.setRequestHeader('Content-type', Content_type);
-        request.setRequestHeader('X-CSRFToken', get_cookie("csrftoken"));
-        request.send(data);
+HTMLElement.prototype.append_by_obj = function(obj) {
+    obj = obj || {};
+    var div = document.createElement(obj.type || 'div');
+    div.id = obj.id || "";
+    div.style = obj.style || "";
+    div.className = obj.className || "";
+    div.innerHTML = obj.html || "";
+    div.onclick = obj.onclick || "";
+    this.appendChild(div);
+    if(obj.append) {
+        if(obj.append instanceof Array) {
+            for (var i = 0; i < obj.append.length; i++) {
+                div.append_by_obj(obj.append[i])
+            }
+        }
+        else { div.append_by_obj(obj.append); }
     }
-  }
- },
- fetch: function(href, type, data) { 
-    Controller.loading.show();
-    // get from memory, if not fetch ...
-    href = href.replace(/.*\/\/[^\/]+\//, '');
-    href = isNaN(href) ? href : "/api/item/" + href + "/";
-    Controller.model.fetch(href, type, data);
- },
- handle_init_fetch: function(status, href, response) {
-    if("handle_fetch" in Controller) {
-        console.log('handle_fetch')
-        Controller.handle_fetch(status, href, response);
-    }
-    else {
-        console.log('setTimeout')
-        setTimeout(Controller.handle_init_fetch, 100, status, href, response);
-    }
- },
- loading: {
-     show: function() {
-         var loading_div = document.getElementById('loading_div');
-         loading_div.setAttribute("class", "loading_root");
-     },
-     hide: function() {
-         var loading_div = document.getElementById('loading_div');
-         loading_div.setAttribute("class", "none");
-     }
- },
- error: {
-     display: false,
-     show: function(html) {
-         Controller.error.display = true;
-         var error_div = document.getElementById('error_div');
-         console.error(html);
-         error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
-         error_div.setAttribute("class", "error_root");
-     },
-     hide: function() {
-         Controller.error.display = false;
-         var error_div = document.getElementById('error_div');
-         error_div.innerHTML = "hide";
-         error_div.setAttribute("class", "none");
-         Controller.loading.hide();
-     }
- }
 };
+
+var alzod = {
+    View: {
+        current_index: 1,
+        initial_item: null,
+    },
+
+    Model: {
+    fetch: function(href, type, data) {
+        type = type || "get";
+        type = type.toUpperCase(); 
+        var request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+            if(this.readyState == 4) {
+                Controller.handle_init_fetch(
+                    this.status, href, request.responseText);
+            }
+        };
+        request.open(type, href, true);
+        if(data === undefined) { request.send(); }
+        else {
+            data = JSON.stringify(data);
+            var Content_type = 'application/json; charset=utf-8';
+            request.setRequestHeader('Content-type', Content_type);
+            request.setRequestHeader('X-CSRFToken', get_cookie("csrftoken"));
+            request.send(data);
+        }
+    }
+    },
+
+    Controller: {
+        fetch: function(href, type, data) { 
+            Controller.loading.show();
+            // get from memory, if not fetch ...
+            href = href.replace(/.*\/\/[^\/]+\//, '');
+            href = isNaN(href) ? "/" + href : "/api/item/" + href + "/";
+            alzod.Model.fetch(href, type, data);
+        },
+        handle_repetition: 0,
+        handle_timer: 0,
+        handle_init_fetch: function(status, href, response) {
+            if("handle_fetch" in Controller && "add" in View) {
+                Controller.handle_repetition = 0;
+                Controller.handle_fetch(status, href, response);
+            }
+            else {
+                if(Controller.handle_repetition < 10) {
+                    console.log('handle_init_fetch', 
+                        Controller.handle_repetition);
+                    Controller.handle_repetition++;
+                    clearTimeout(Controller.handle_timer);
+                    Controller.handle_timer = setTimeout(
+                        Controller.handle_init_fetch, 100, 
+                        status, href, response);
+                }
+                else {
+                    console.log("handle_fetch" in Controller, "add" in View)
+                    Controller.error.show("Please check your connection!");
+                }
+            }
+        },
+        loading: {
+            show: function() {
+                var loading_div = document.getElementById('loading_div');
+                loading_div.setAttribute("class", "loading_root");
+            },
+            hide: function() {
+                var loading_div = document.getElementById('loading_div');
+                loading_div.setAttribute("class", "none");
+            }
+        },
+        error: {
+            display: false,
+            show: function(html) {
+                Controller.error.display = true;
+                var error_div = document.getElementById('error_div');
+                error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
+                error_div.setAttribute("class", "error_root");
+                console.error(html);
+            },
+            hide: function() {
+                Controller.error.display = false;
+                var error_div = document.getElementById('error_div');
+                error_div.innerHTML = "hide";
+                error_div.setAttribute("class", "none");
+                Controller.loading.hide();
+            }
+        }
+    }
+};
+
+var View = alzod.View;
+var Model = alzod.Model;
+var Controller = alzod.Controller;
+
 
 function get_cookie(name) {
     var cookieValue = null;
@@ -137,30 +176,15 @@ function get_cookie(name) {
             var cookie = cookies[i].trim();
             // Does this cookie string begin with the name we want?
             if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                cookieValue = decodeURIComponent(
+                    cookie.substring(name.length + 1)
+                );
                 break;
             }
         }
     }
     return cookieValue;
 }
-
-if("onpopstate" in window) {
-    window.onpopstate = function(event) {
-        if(event.state) {
-            if(event.state.index >= Controller.current_index) {
-                Controller.current_index++;
-                Controller.add(event.state.obj);
-                return null;
-            }
-        }
-        Controller.current_index--;
-        Controller.remove_last_view();
-        Controller.error.hide();
-    };
-}
-else { window.onerror("onpopstate not in window!", "controller.js"); }
-
 
 document.onsubmit = function(event) {
     event.preventDefault();
@@ -274,14 +298,15 @@ document.onsubmit = function(event) {
     (function() {
         var initial_url = window.location.pathname.replace(/^\//, "");
         if(!isNaN(initial_url) && 0 < initial_url.length) {
-            Controller.initial_item = initial_url;
+            View.initial_item = initial_url;
             Controller.fetch(initial_url);
         }
         // get auth
-        Controller.fetch("/api/auth/");
+        Controller.fetch("api/auth/");
     })();
 </script>
 <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+<script src="/static/js/view.js"></script>
 <script src="/static/js/controller.js"></script>
 <script src="/static/js/head.js"></script>
 </body>

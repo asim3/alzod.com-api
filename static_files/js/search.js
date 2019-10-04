@@ -1,4 +1,4 @@
-Controller.view['search'] = function(view){
+View.scripts.search = function(view){
     var root = document.createElement('div');
     for (var i=0; i < view.content.length; i++) {
       var id = view.content[i].id;
