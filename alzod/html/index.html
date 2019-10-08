@@ -27,7 +27,7 @@ a:active {text-decoration: none; color: black;}
 .logo {display: block; height:5rem; line-height: 5rem;}
 .logo svg {display: block; float:left;width:5rem; height:5rem; }
 .logo span {display: block; float:left; font-size: 3rem;}
-.search_box {display: block; height:25rem;}
+.search_box {display: block; height:5rem;}
 .search_box input[type=textbox] {float:left;width:75vw; height:3rem;}
 .search_box input[type=submit] {float:left;width:15vw; line-height:3rem;}
 .icons_root {
@@ -55,142 +55,61 @@ window.onerror = function (message, url, line, column) {
 };
 
 HTMLElement.prototype.append_by_obj = function(obj) {
-    obj = obj || {};
-    var div = document.createElement(obj.type || 'div');
-    div.id = obj.id || "";
-    div.style = obj.style || "";
-    div.className = obj.className || "";
-    div.innerHTML = obj.html || "";
-    div.onclick = obj.onclick || "";
-    this.appendChild(div);
-    if(obj.append) {
-        if(obj.append instanceof Array) {
-            for (var i = 0; i < obj.append.length; i++) {
-                div.append_by_obj(obj.append[i])
+    if(typeof obj === "object") {
+        var div = document.createElement(obj.element || 'div');
+        for (var key in obj) {
+            if(obj.hasOwnProperty(key)) {
+                if(key === "append") {
+                    if(obj.append instanceof Array) {
+                        for (var i = 0; i < obj.append.length; i++) {
+                            div.append_by_obj(obj.append[i]);
+                        }
+                    }
+                    else { div.append_by_obj(obj.append); }
+                }
+                else { div[key] = obj[key]; }
             }
         }
-        else { div.append_by_obj(obj.append); }
+        this.appendChild(div);
     }
 };
 
 var alzod = {
-    View: {
-        current_index: 1,
-        initial_item: null,
-    },
+    View: {},
 
     Model: {
-    fetch: function(href, type, data) {
-        type = type || "get";
-        type = type.toUpperCase(); 
-        var request = new XMLHttpRequest();
-        request.onreadystatechange = function() {
-            if(this.readyState == 4) {
-                Controller.handle_init_fetch(
-                    this.status, href, request.responseText);
-            }
-        };
-        request.open(type, href, true);
-        if(data === undefined) { request.send(); }
-        else {
-            data = JSON.stringify(data);
-            var Content_type = 'application/json; charset=utf-8';
-            request.setRequestHeader('Content-type', Content_type);
-            request.setRequestHeader('X-CSRFToken', get_cookie("csrftoken"));
-            request.send(data);
+        fetch: function(href, type, data) {
+            var item_no = href.replace(/.*\/\/[^\/]+\//, '');
+            href = isNaN(item_no) ? href : "/api/item/" + item_no;
+            type = (type || "GET").toUpperCase();
+            if(type !== "GET") {
+                if("post" in alzod.Model) { 
+                    alzod.Model.post(href, type, data); }}
+            else { alzod.Model.get(href); }
+        },
+        get: function(href) {
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function() {
+                if(this.readyState == 4) {
+                    if("handle_response" in alzod.Controller) {
+                        alzod.Controller.handle_response(
+                            this.status, href, request.responseText);
+                    }
+                    else {
+                        alzod.Controller.initial_data = [
+                            this.status, href, request.responseText];
+                    }
+                }
+            };
+            request.open("GET", href, true);
+            request.send();
         }
-    }
     },
 
     Controller: {
-        fetch: function(href, type, data) { 
-            Controller.loading.show();
-            // get from memory, if not fetch ...
-            href = href.replace(/.*\/\/[^\/]+\//, '');
-            href = isNaN(href) ? "/" + href : "/api/item/" + href + "/";
-            alzod.Model.fetch(href, type, data);
-        },
-        handle_repetition: 0,
-        handle_timer: 0,
-        handle_init_fetch: function(status, href, response) {
-            if("handle_fetch" in Controller && "add" in View) {
-                Controller.handle_repetition = 0;
-                Controller.handle_fetch(status, href, response);
-            }
-            else {
-                if(Controller.handle_repetition < 10) {
-                    console.log('handle_init_fetch', 
-                        Controller.handle_repetition);
-                    Controller.handle_repetition++;
-                    clearTimeout(Controller.handle_timer);
-                    Controller.handle_timer = setTimeout(
-                        Controller.handle_init_fetch, 100, 
-                        status, href, response);
-                }
-                else {
-                    console.log("handle_fetch" in Controller, "add" in View)
-                    Controller.error.show("Please check your connection!");
-                }
-            }
-        },
-        loading: {
-            show: function() {
-                var loading_div = document.getElementById('loading_div');
-                loading_div.setAttribute("class", "loading_root");
-            },
-            hide: function() {
-                var loading_div = document.getElementById('loading_div');
-                loading_div.setAttribute("class", "none");
-            }
-        },
-        error: {
-            display: false,
-            show: function(html) {
-                Controller.error.display = true;
-                var error_div = document.getElementById('error_div');
-                error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
-                error_div.setAttribute("class", "error_root");
-                console.error(html);
-            },
-            hide: function() {
-                Controller.error.display = false;
-                var error_div = document.getElementById('error_div');
-                error_div.innerHTML = "hide";
-                error_div.setAttribute("class", "none");
-                Controller.loading.hide();
-            }
-        }
+        initial_url: null,
+        initial_data: null
     }
-};
-
-var View = alzod.View;
-var Model = alzod.Model;
-var Controller = alzod.Controller;
-
-
-function get_cookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = cookies[i].trim();
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(
-                    cookie.substring(name.length + 1)
-                );
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-document.onsubmit = function(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    // delete: only for testing
-    Controller.error.show("Form submit function not updated!");
 };
 </script>
 </head>
@@ -201,20 +120,13 @@ document.onsubmit = function(event) {
     <div class="error_text">loading</div>
 </div>
 
-<div id="error_div" class="none" onclick="Controller.error.hide();">e</div>
+<div id="error_div" class="none" onclick="alzod.Controller.error.hide();">
+    e
+</div>
 
 <div id="all_views">
-    <div id="view_home" class="view_root">
-        <div class="logo">
-            <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
-                <circle cx="50" cy="50" r="40" fill="green" />
-            </svg> 
-            <span>Alzod</span>
-        </div>
-
+    <div id="xxx" class="">
         <ol>
-            <li>post: login user</li>
-            <li>-------</li>
             <li>post: save new item</li>
             <li>post: edit item</li>
             <li>post: delete item</li>
@@ -227,86 +139,74 @@ document.onsubmit = function(event) {
             <li>css: style new item elements</li>
             <li>-------</li>
         </ol>
-
-        <form class="search_box" action='/api/item/' method='POST'>
-            <input type="textbox" name="type" value="item" />
-            <input type="textbox" name="title" value="" placeholder="title" />
-            <input type="textbox" name="price" value="" placeholder="price" />
-            <input type="textbox" name="country" value="" placeholder="country" />
-            
-            <textarea name='description2'>Text area.. //\\/N/n\n bbbb</textarea>
-            
-            <select name="description" size="4" multiple>
-                <option value="volvo">Volvo</option>
-                <option value="saab">Saab</option>
-                <option value="fiat">Fiat</option>
-                <option value="audi">Audi</option>
-            </select>
-
-            <input type="checkbox" name="vehicle1" value="Bike"> I have a bike<br>
-            <input type="checkbox" name="vehicle2" value="Car"> I have a car<br>
-            <input type="checkbox" name="vehicle3" value="Boat" checked> I have a boat<br>
-            <input type="checkbox" name="vehicle3" value="Big Boat" checked> I have a big boat<br>
-            <input type="submit" value="Search" />
-        </form>
-
-        <div class="icons_root">
-            <a href="/1" title="المفضلة" class="icon_larg"
-                onclick="Controller.fetch(this.href);return false;">
-                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
-                    <circle cx="50" cy="50" r="40" fill="blue" />
-                </svg> 
-                <span>المفضلة</span>
-            </a>
-
-            <a href="/2" title="المفضلة" class="icon_larg"
-                onclick="Controller.fetch(this.href);return false;">
-                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
-                    <circle cx="50" cy="50" r="40" fill="yellow" />
-                </svg> 
-                <span>السلة</span>
-            </a>
-
-            <a href="/3" title="المفضلة" class="icon_larg"
-                onclick="Controller.fetch(this.href);return false;">
-                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
-                    <circle cx="50" cy="50" r="40" fill="gray" />
-                </svg> 
-                <span>تسجيل</span>
-            </a>
-
-            <a href="/4" title="إضافة" class="icon_larg"
-                onclick="Controller.fetch(this.href);return false;">
-                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
-                    <circle cx="50" cy="50" r="40" fill="gray" />
-                </svg> 
-                <span>إضافة</span>
-            </a>
-
-            <a href="/5" title="المفضلة" class="icon_larg"
-                onclick="Controller.fetch(this.href);return false;">
-                <svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100">
-                    <circle cx="50" cy="50" r="40" fill="red" />
-                </svg> 
-                <span>Error</span>
-            </a>
-        </div>
     </div>
 </div>
 
 <script type="text/javascript">
-    (function() {
-        var initial_url = window.location.pathname.replace(/^\//, "");
-        if(!isNaN(initial_url) && 0 < initial_url.length) {
-            View.initial_item = initial_url;
-            Controller.fetch(initial_url);
+(function(){
+    var view_home = {id: "view_home", className: "view_root", append: []};
+    var logo_div = { className: "logo", innerHTML: '<svg viewBox="0 0 100 100" style="width: 3rem;height: 3rem;" height="100" width="100"><circle cx="50" cy="50" r="40" fill="green" /></svg>'}
+    logo_div.append = {element: "span", innerHTML: "Alzod"};
+    view_home.append.push(logo_div);
+
+    var search_form = {
+      element:"form",className:"search_box",action:"/api/item/",method:"POST"};
+
+    search_form.append = [
+        {element:"input",type:"textbox", name:"type", placeholder: "type"},
+        {element:"input",type:"submit", value:"Search"}
+    ];
+
+    var icons_root = {className: "icons_root", append: [
+        {   element:"a", href: "/1", className: "icon_larg",
+            onclick: function(){alzod.Model.fetch(this.href);return false;},
+            append: {element: "span", innerHTML: "المفضلة"}
+        },
+        {   element:"a", href: "/2", className: "icon_larg",
+            onclick: function(){alzod.Model.fetch(this.href);return false;},
+            append: {element: "span", innerHTML: "السلة"}
+        },
+        {   element:"a", href: "/login/", className: "icon_larg",
+            onclick: function(){alzod.Model.fetch(this.href);return false;},
+            append: {element: "span", innerHTML: "تسجيل"}
+        },
+        {   element:"a", href: "/logout/", className: "icon_larg",
+            onclick: function(){alzod.Model.fetch(this.href);return false;},
+            append: {element: "span", innerHTML: "Logout"}
+        },
+        {   element:"a", href: "/4", className: "icon_larg",
+            onclick: function(){alzod.Model.fetch(this.href);return false;},
+            append: {element: "span", innerHTML: "إضافة"}
+        },
+        {   element:"a", href: "/login/", className: "icon_larg",
+            onclick: function(){alzod.Model.fetch(this.href);return false;},
+            append: {element: "span", innerHTML: "/login/"}
+        },
+        {   element:"a", href: "login/", className: "icon_larg",
+            onclick: function(){alzod.Model.fetch(this.href);return false;},
+            append: {element: "span", innerHTML: "login/"}
+        },
+        {   element:"a", href: "/logout", className: "icon_larg",
+            onclick: function(){alzod.Model.fetch(this.href);return false;},
+            append: {element: "span", innerHTML: "/logout"}
         }
-        // get auth
-        Controller.fetch("api/auth/");
-    })();
+    ]};
+
+    view_home.append.push(search_form);
+    view_home.append.push(icons_root);
+    document.getElementById('all_views').append_by_obj(view_home);
+
+
+    var initial_url = window.location.pathname.replace(/\//g, "");
+    if(!isNaN(initial_url) && 0 < initial_url.length) {
+        alzod.Controller.initial_url = "/" + initial_url;
+        alzod.Model.fetch("/api/item/" + initial_url);
+    }
+})();
 </script>
 <link rel="stylesheet" type="text/css" href="/static/css/main.css">
 <script src="/static/js/view.js"></script>
+<script src="/static/js/model.js"></script>
 <script src="/static/js/controller.js"></script>
 <script src="/static/js/head.js"></script>
 </body>

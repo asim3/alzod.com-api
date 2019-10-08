@@ -1,4 +1,4 @@
-View.scripts.search = function(view){
+alzod.View.scripts.search = function(view){
     var root = document.createElement('div');
     for (var i=0; i < view.content.length; i++) {
       var id = view.content[i].id;

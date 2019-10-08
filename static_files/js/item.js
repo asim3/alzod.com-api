@@ -1,6 +1,7 @@
-View.scripts.item = function(view){
+alzod.View.scripts.item = function(view){
     var obj = {
-        html: "test " + view.type
+        innerHTML: "test " + view.type + ` id(${view.id})`,
+        append: {innerHTML: "<h1>"+ view.description + "</h1>"}
     }
 
     return obj

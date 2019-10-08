@@ -1,15 +1,12 @@
 from rest_framework import routers
-from members.views import AuthUserView, UserViewSet
+from members.views import AuthUserView
 from items.views import ItemViewSet
 
 router = routers.DefaultRouter()
-router.register(r'^auth', AuthUserView)
-router.register(r'^user', UserViewSet)
+router.register(r'^auth', AuthUserView, basename="auth")
 router.register(r'^item', ItemViewSet)
 
 # Members
-# path('auth/', "view"),
-# path('login/', "view"),
 # path('register/', "view"),
 
 # Tasks

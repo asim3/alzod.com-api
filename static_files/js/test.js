@@ -1,6 +1,6 @@
-View.scripts.test = function(view){
+alzod.View.scripts.test = function(view){
     var obj = {
-        html: "test " + view.type
+        innerHTML: "test " + view.type + ` id(${view.id})`
     }
 
     return obj

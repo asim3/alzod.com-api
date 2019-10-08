@@ -1,11 +1,23 @@
 (function(controller) {
-    if("add" in View) {
-        controller();
-    }
-    else {
-        console.log('add not in View')
-    }
-})(function() {
+    var View = alzod.View;
+    var Model = alzod.Model;
+    var Controller = alzod.Controller;
+    var timer = 0;
+    var check_add_method = function() {
+        if("add" in View && "fetch_script" in Model) {
+            controller(View, Model, Controller);
+        }
+        else {
+            clearTimeout(timer);
+            if(Controller.handle_repetition < Controller.max_repetition) {
+                timer = setTimeout(check_add_method, 100);
+                console.log('add not in View');
+            }
+        }
+    };
+    //check_add_method();
+    setTimeout(check_add_method, 1000);
+})(function(View, Model, Controller) {
 
 var form_to_json = function(elements) {
     return [].reduce.call(elements, function(data, elm) {
@@ -40,84 +52,123 @@ document.onsubmit = function(event) {
     try {
         var elements = event.target.elements;
         var form_data = form_to_json(elements);
+        form_data.event_target = event.target;
         Controller.fetch(event.target.action, "post", form_data);
     }
     catch(error) { 
         Controller.error.show("on submit form error: " + error); 
     }
 };
-    
 
-Controller.handle_fetch = function(status, href, response) {
-    if(status == 200 || status == 201) {
-        try {
-            var response_json = JSON.parse(response);
-            if('type' in response_json) {
-                response_json.href = href;
-                if(href !== "/api/auth/") {
-                    View.add(response_json);
-                }
-                else { console.log(href + " == /api/auth/"); }
-            }
-            else {
-                Controller.error.show('Controller.type not found');
-            }
-        }
-        catch(error) {
-            if(error instanceof SyntaxError) {
-                Controller.error.show("JSON.parse(response): " + error);
-            }
-            else { Controller.error.show("View.add(obj): " + error); }
+
+window.onpopstate = function(event) {
+    if(event.state) {
+        if(event.state.index >= View.current_index) {
+            View.current_index++;
+            View.add(event.state.obj);
+            return null;
         }
     }
-    else if(status == 400 || status == 401 || status == 403) {
-        console.warn(response);
-        Controller.loading.hide();
+    View.current_index--;
+    View.remove_last_view();
+    Controller.error.hide();
+};
+
+// Controller attributes:
+
+
+
+// Controller methods:
+
+
+Controller.fetch = function(href, type, data) { 
+    Controller.loading.show();
+    Model.fetch(href, type, data);
+};
+
+
+Controller.handle_response = function(status, href, response, data) {
+    var response_json = "";
+    try { 
+        response_json = JSON.parse(response); 
+        response_json.href = href;
+        response_json.clean_href = href.replace(/.*\/\/[^\/]+/, '')
+            .replace("api/item/", "");
+    }
+    catch(error) { Controller.error.show("JSON.parse(response): " + error); }
+
+    if(Controller.is_JSON(response_json)) {
+        if(status == 200 || status == 201) {
+            View.handle_good_response(response_json);
+        }
+        else if(status == 400) {
+            View.handle_form_error(response_json, data.event_target);
+            Controller.loading.hide();
+        }
+        else if(status == 401 || status == 403) {
+            console.warn(response_json, data);
+            console.log(data.event_target);
+            Controller.loading.hide();
+        }
+        else {
+            Controller.error.show("Error in handle_response: status("+ status +")");
+        }
     }
     else {
-        Controller.error.show("Handle fetch status: " + status);
+        Controller.error.show('response is not JSON!');
     }
 };
 
 
-Model.fetch_script = function(obj) {
-    var head = document.getElementsByTagName('head')[0];
-    var script = document.createElement('script');
-    script.id = "js_script_" + obj.type;
-    script.type = 'text/javascript';
-    script.onload = function() { 
-        if(obj.type in View.scripts) {
-            View.add(obj);
-        }
-        else{ 
-          Controller.error.show('View.scripts does not contain: '+obj.type);
-        }
-    };
-    script.onerror = function() {
-        var error_text = 'adding script to head error!';
-        Controller.error.show(error_text);
-        window.onerror(error_text, "controller.js")
-    };
-    head.appendChild(script);
-    script.src = "/static/js/"+ obj.type +".js";
+Controller.loading = {
+    show: function() {
+        var loading_div = document.getElementById('loading_div');
+        loading_div.setAttribute("class", "loading_root");
+    },
+    hide: function() {
+        var loading_div = document.getElementById('loading_div');
+        loading_div.setAttribute("class", "none");
+    }
 };
 
 
-if("onpopstate" in window) {
-    window.onpopstate = function(event) {
-        if(event.state) {
-            if(event.state.index >= View.current_index) {
-                View.current_index++;
-                View.add(event.state.obj);
-                return null;
-            }
+Controller.error = {
+    display: false,
+    show: function(html) {
+        Controller.error.display = true;
+        var error_div = document.getElementById('error_div');
+        error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
+        error_div.setAttribute("class", "error_root");
+        console.error(html);
+    },
+    hide: function() {
+        Controller.error.display = false;
+        var error_div = document.getElementById('error_div');
+        error_div.innerHTML = "hide";
+        error_div.setAttribute("class", "none");
+        Controller.loading.hide();
+    }
+};
+
+
+Controller.is_JSON = function(obj) {
+    if(typeof obj === "object") {
+        if(obj.constructor === Object) {
+            return true;
         }
-        View.current_index--;
-        View.remove_last_view();
-        Controller.error.hide();
-    };
+    }
+    return false;
+};
+
+
+// run after load:
+
+
+Controller.fetch("/api/auth/");
+
+if(Controller.initial_url) {
+    var args = Controller.initial_data;
+    Controller.handle_response(args[0], args[1], args[2]);
 }
-else { window.onerror("onpopstate not in window!", "controller.js"); }
-
-
-});
+else { View.show('view_home'); }
+}); // end of controller function.
