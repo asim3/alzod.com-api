@@ -15,9 +15,9 @@ urlpatterns = [
 
     path('admin/', admin.site.urls),
 
-    # delete path('user/', landing_page ),
 
     # landing page
+    path('user/', landing_page ),
     path('user/<int:id>', landing_page ), 
     path('user/<int:id>/', landing_page ),
     path('<int:id>', landing_page ), 

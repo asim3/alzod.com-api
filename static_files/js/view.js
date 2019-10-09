@@ -6,20 +6,19 @@
     else { console.log('View not in alzod') }
 })(function(View, Model, Controller) {
 
-var ViewBase = function(obj, view_name) {
+var ViewBase = function(content, view_name) {
     var index = View.auto_id++;
     var obj_id = view_name || "view_" + index;
     return {
         "id": obj_id,
         "index": index,
-        "type": obj.type,
-        "href": obj.href,
-        "clean_href": obj.clean_href,
-        "content": obj,
+        "type": content.type,
+        "url": content.url,
+        "content": content,
         "hide": function() {
             var div = document.getElementById(obj_id);
             if(div) { div.setAttribute("class", "none"); }
-            else { Controller.error.show(obj_id + " not found!"); }
+            else { View.show_error(obj_id + " not found!"); }
         },
         "show": function() {
             for (var key in View.running) {
@@ -29,7 +28,7 @@ var ViewBase = function(obj, view_name) {
             }
             var div = document.getElementById(obj_id);
             div.setAttribute("class", "view_root");
-            Controller.loading.hide();
+            View.hide_loading();
         },
         "remove": function() {
             document.getElementById(obj_id).remove();
@@ -56,45 +55,57 @@ View.running.view_home.index = 1;
 // View methods:
 
 
-View.add = function(obj) {
-    if(obj.type in View.scripts) {
-        if(View.not_blocked(obj.clean_href)) {
-            var view = ViewBase(obj);
-            try {
-                document.getElementById('all_views').append_by_obj({
-                    className: "none", id: view.id, append: [
-                        View.scripts.head(view),
-                        View.scripts[view.type](view)
-                    ]
-                });
-            }
-            catch(error) {
-                Controller.error.show("scripts[" + view.type + "]: " + error);
-            }
-            View.running[view.id] = view;
-            View.show(view.id);
-            View.push_to_history(obj); // onpopstate => View.add(obj);
+View.add = function(content) {
+    if(content.type in View.scripts) {
+        var view = ViewBase(content);
+        try {
+            document.getElementById('all_views').append_by_obj({
+                className: "none", id: view.id, append: [
+                    View.scripts.head(view),
+                    View.scripts[view.type](view)
+                ]
+            });
         }
+        catch(error) {
+            View.show_error("scripts[" + view.type + "]: " + error);
+        }
+        View.running[view.id] = view;
+        View.show(view.id);
+        Controller.push_to_history(content);
     }
     else {
-        Controller.error.show('View.scripts['+ obj.type +'] not found!');
+        View.show_error('View.scripts['+ obj.type +'] not found!');
     }
 };
 
-View.push_to_history = function(obj) {
-    if(!obj.in_memory) {
-        obj.in_memory = true;
-        var page_info = {
-            index: View.current_index++, 
-            obj: obj
-        };
-        window.history.pushState(page_info, null, page_info.obj.clean_href);
-    }
-};
 
 View.show = function(view) { View.running[view].show(); };
 
+
 View.remove = function(view) { View.running[view].remove(); };
+
+
+View.hide_loading = function() {
+    var loading_div = document.getElementById('loading_div');
+    loading_div.setAttribute("class", "none");
+};
+
+
+View.show_error = function(html) {
+    var error_div = document.getElementById('error_div');
+    error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
+    error_div.setAttribute("class", "error_root");
+    console.error(html);
+};
+
+
+View.hide_error = function() {
+    var error_div = document.getElementById('error_div');
+    error_div.innerHTML = "hide";
+    error_div.setAttribute("class", "none");
+    View.hide_loading();
+};
+
 
 View.show_last_view = function() {
     var last = "view_home";
@@ -106,6 +117,7 @@ View.show_last_view = function() {
     }
     View.show(last);
 };
+
 
 View.remove_last_view = function() {
     var last = null;
@@ -122,40 +134,62 @@ View.remove_last_view = function() {
 };
 
 
-View.handle_good_response = function(response_obj) {
-    if('type' in response_obj) {
-        if(response_obj.type in View.scripts) {
-            View.add(response_obj);
+View.handle_ok_response = function(content) {
+    if(content.type in View.scripts) {
+        if(View.blocked(content.url_clean)) {
+            View.handle_blocked(content);
         }
-        else {
-            Model.fetch_script(response_obj);
-        }
+        else { View.add(content); }
     }
-    else {
-        Controller.error.show('Controller.type not found');
-    }
+    else { Model.fetch_script(content); }
 };
 
 
-View.handle_form_error = function(response_obj, event_target) {
-    for (const key in response_obj) {
-        if (response_obj.hasOwnProperty(key)) {
+View.handle_form_error = function(obj, event_target) {
+    for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
             var element = event_target.querySelector("[name="+key+"]");
             if(element){ element.style = "border: 2px solid red;"; }
         }
     }
+    View.hide_loading();
 };
 
 
-View.not_blocked = function(href) {
-    var blocked_href = ["api/auth", "logout", "login"];
-    href = href.replace(/(?:^\/|\/$)/g, "");
-    if(blocked_href.indexOf(href) === -1) {
-        console.log("%c "+href, "color: #fff; background: green;")
-        return true;
+View.blocked = function(url) {
+    var allowed_url = ["user"];
+    if(!isNaN(url)) { return false; }
+    else {
+        if(allowed_url.indexOf(url) !== -1) { return false; }
     }
-    console.log("%c blocked "+href, "color: #fff; background: red;")
-    return false;
+    return true;
+};
+
+
+View.handle_blocked = function(obj) {
+    console.log("%c blocked " + obj.url, 
+        "color: #fff; background: red;font-size: 14px;");
+
+    if(obj.type === "user") {
+        if(obj.url_clean === "login") {
+            // handle POST request
+            View.add(obj);
+        }
+        else {
+            if(obj.auth) {
+                if(obj.url_clean === "api/auth") {
+                    console.log("change home page from index to user page.");
+                }
+            }
+            else {
+                if(obj.url_clean === "logout") {
+                    View.show_error("::::: you have been logout. :::::");
+                }
+            }
+            View.hide_loading();
+        }
+    }
+    else { View.hide_loading(); }
 };
 
 }); // end of view function.

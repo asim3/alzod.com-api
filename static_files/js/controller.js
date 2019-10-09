@@ -19,8 +19,8 @@
     setTimeout(check_add_method, 1000);
 })(function(View, Model, Controller) {
 
-var form_to_json = function(elements) {
-    return [].reduce.call(elements, function(data, elm) {
+HTMLFormElement.prototype.serialize = function() {
+    var obj = [].reduce.call(this.elements, function(data, elm) {
         var is_valid = false;
         if(elm.name && elm.value) {
             if(elm.type != 'radio' && elm.type != 'checkbox') {
@@ -43,6 +43,17 @@ var form_to_json = function(elements) {
         }
         return data;
     }, {});
+    if(obj.encode_url === "url") {
+        var url_data = ""; var mark = "";
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                url_data += mark + key + "=" + encodeURIComponent(obj[key]);
+                mark = "&";
+            }
+        }
+        return url_data
+    }
+    return obj;
 };
 
 
@@ -50,13 +61,12 @@ document.onsubmit = function(event) {
     event.preventDefault();
     event.stopPropagation();
     try {
-        var elements = event.target.elements;
-        var form_data = form_to_json(elements);
+        var form_data = event.target.serialize();
         form_data.event_target = event.target;
         Controller.fetch(event.target.action, "post", form_data);
     }
     catch(error) { 
-        Controller.error.show("on submit form error: " + error); 
+        View.show_error("on submit form error: " + error); 
     }
 };
 
@@ -65,13 +75,13 @@ window.onpopstate = function(event) {
     if(event.state) {
         if(event.state.index >= View.current_index) {
             View.current_index++;
-            View.add(event.state.obj);
+            View.handle_ok_response(event.state.content);
             return null;
         }
     }
     View.current_index--;
     View.remove_last_view();
-    Controller.error.hide();
+    View.hide_error();
 };
 
 // Controller attributes:
@@ -81,92 +91,93 @@ window.onpopstate = function(event) {
 // Controller methods:
 
 
-Controller.fetch = function(href, type, data) { 
-    Controller.loading.show();
-    Model.fetch(href, type, data);
+Controller.handle_response = function(status, url, request, data) {
+    if(1 < status) {
+        var content = "";
+        try { 
+            content = JSON.parse(request.responseText);
+            content.type = content.type || "test";
+            content.url = url;
+            content.url_path = url.replace(/.*\/\/[^\/]+/, '')
+            content.url_clean = content.url_path
+                .replace(/(?:^\/|\/$)/g, "")
+                .replace("api/item/", "");
+        } 
+        catch(error) { View.show_error("JSON.parse(response): " + error); }
+
+        if(typeof content === "object" && content.constructor === Object) {
+            Controller.handle_JSON_response(status, content, data);
+        } 
+        else { View.show_error('response is not JSON!'); }
+    } 
+    else { View.show_error('Internet connection is offline!'); }
 };
 
 
-Controller.handle_response = function(status, href, response, data) {
-    var response_json = "";
-    try { 
-        response_json = JSON.parse(response); 
-        response_json.href = href;
-        response_json.clean_href = href.replace(/.*\/\/[^\/]+/, '')
-            .replace("api/item/", "");
+Controller.handle_JSON_response = function(status, content, data) {
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+    console.log(">>>>>>>>>>>status",status);
+    console.log(">>>>>>>>>>>content",content);
+    console.log(">>>>>>>>>>>data",data);
+    if(status == 200 || status == 201) { // 200 OK, 201 Created
+        View.handle_ok_response(content);
     }
-    catch(error) { Controller.error.show("JSON.parse(response): " + error); }
-
-    if(Controller.is_JSON(response_json)) {
-        if(status == 200 || status == 201) {
-            View.handle_good_response(response_json);
-        }
-        else if(status == 400) {
-            View.handle_form_error(response_json, data.event_target);
-            Controller.loading.hide();
-        }
-        else if(status == 401 || status == 403) {
-            console.warn(response_json, data);
-            console.log(data.event_target);
-            Controller.loading.hide();
-        }
-        else {
-            Controller.error.show("Error in handle_response: status("+ status +")");
-        }
+    else if(status == 400) { // 400 Bad Request
+        View.handle_form_error(content, data.event_target);
+    }
+    else if(status == 401) { // 401 Unauthorized
+        console.warn(content, data);
+        console.log(data.event_target);
+        View.hide_loading();
+    }
+    else if(status == 403) { // 403 Forbidden
+        console.log("403 Forbidden");
+        View.hide_loading();
+    }
+    else if(status == 404) { // 404 Not Found
+        console.log("404 Not Found");
+        View.hide_loading();
     }
     else {
-        Controller.error.show('response is not JSON!');
+        // 202 Accepted
+        // 500 Internal Server Error
+        // 501 Not Implemented
+        // 503 Service Unavailable
+        View.show_error("Error in handle_response: status("+ status +")");
     }
 };
 
 
-Controller.loading = {
-    show: function() {
-        var loading_div = document.getElementById('loading_div');
-        loading_div.setAttribute("class", "loading_root");
-    },
-    hide: function() {
-        var loading_div = document.getElementById('loading_div');
-        loading_div.setAttribute("class", "none");
-    }
-};
-
-
-Controller.error = {
-    display: false,
-    show: function(html) {
-        Controller.error.display = true;
-        var error_div = document.getElementById('error_div');
-        error_div.innerHTML = "<div class='error_text'>"+ html +"</div>";
-        error_div.setAttribute("class", "error_root");
-        console.error(html);
-    },
-    hide: function() {
-        Controller.error.display = false;
-        var error_div = document.getElementById('error_div');
-        error_div.innerHTML = "hide";
-        error_div.setAttribute("class", "none");
-        Controller.loading.hide();
-    }
-};
-
-
-Controller.is_JSON = function(obj) {
-    if(typeof obj === "object") {
-        if(obj.constructor === Object) {
-            return true;
+Controller.push_to_history = function(content) {
+    if(!content.in_history) {
+        content.in_history = true;
+        var page_info = {
+            index: View.current_index++, 
+            content: content
+        };
+        var url = page_info.content.url_clean;
+        url = isNaN(url) ? url : "/" + url;
+        if(View.blocked(url)) {
+            url = "/user/";
+        }
+        try { window.history.pushState(page_info, null, url); }
+        catch(error) { 
+            window.history.pushState(page_info, null, "/error")
+            View.show_error("history.pushState: " + error); 
         }
     }
-    return false;
 };
+
+
+
+
 
 
 // run after load:
 
-
 Controller.fetch("/api/auth/");
 
-if(Controller.initial_url) {
+if(Controller.initial_data) {
     var args = Controller.initial_data;
     Controller.handle_response(args[0], args[1], args[2]);
 }

@@ -12,15 +12,15 @@
 // Model methods:
 
 
-Model.post = function(href, type, data) {
+Model.post = function(url, type, data) {
     var request = new XMLHttpRequest();
     request.onreadystatechange = function() {
-        if(this.readyState == 4) {
+        if(this.readyState === 4) {
             Controller.handle_response(
-                this.status, href, request.responseText, data);
+                this.status, url, request, data);
         }
     };
-    request.open(type, href, true);
+    request.open(type, url, true);
     if(data === undefined) { request.send(); }
     else {
         var Content_type = 'application/x-www-form-urlencoded';
@@ -38,24 +38,25 @@ Model.post = function(href, type, data) {
     }
 };
 
-Model.fetch_script = function(obj) {
+
+Model.fetch_script = function(content) {
     var head = document.getElementsByTagName('head')[0];
     var script = document.createElement('script');
-    script.id = "js_script_" + obj.type;
+    script.id = "js_script_" + content.type;
     script.type = 'text/javascript';
     script.onload = function() { 
-      if(obj.type in View.scripts) { View.add(obj); }
+      if(content.type in View.scripts) { View.handle_ok_response(content); }
       else { 
-        Controller.error.show('fetch_script error. '+ obj.type+' not found!');
+        View.show_error('fetch_script error. '+ content.type+' not found!');
       }
     };
     script.onerror = function() {
         var error_text = 'adding script to head error!';
-        Controller.error.show(error_text);
+        View.show_error(error_text);
         window.onerror(error_text, "controller.js")
     };
     head.appendChild(script);
-    script.src = "/static/js/"+ obj.type +".js";
+    script.src = "/static/js/"+ content.type +".js";
 };
 
 

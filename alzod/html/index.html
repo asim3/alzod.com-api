@@ -75,40 +75,49 @@ HTMLElement.prototype.append_by_obj = function(obj) {
 };
 
 var alzod = {
-    View: {},
+    View: {
+        show_loading: function() {
+            var loading_div = document.getElementById('loading_div');
+            loading_div.setAttribute("class", "loading_root");
+        }
+    },
 
     Model: {
-        fetch: function(href, type, data) {
-            var item_no = href.replace(/.*\/\/[^\/]+\//, '');
-            href = isNaN(item_no) ? href : "/api/item/" + item_no;
+        fetch: function(url, type, data) {
             type = (type || "GET").toUpperCase();
             if(type !== "GET") {
                 if("post" in alzod.Model) { 
-                    alzod.Model.post(href, type, data); }}
-            else { alzod.Model.get(href); }
+                    alzod.Model.post(url, type, data); }}
+            else { alzod.Model.get(url); }
         },
-        get: function(href) {
+        get: function(url) {
             var request = new XMLHttpRequest();
             request.onreadystatechange = function() {
                 if(this.readyState == 4) {
                     if("handle_response" in alzod.Controller) {
                         alzod.Controller.handle_response(
-                            this.status, href, request.responseText);
+                            this.status, url, request);
                     }
                     else {
                         alzod.Controller.initial_data = [
-                            this.status, href, request.responseText];
+                            this.status, url, request];
+                        console.log("%c initial_data" + url, "font-size: 20px;color:#ff00ff;")
                     }
                 }
             };
-            request.open("GET", href, true);
+            request.open("GET", url, true);
             request.send();
         }
     },
 
     Controller: {
-        initial_url: null,
-        initial_data: null
+        initial_data: null,
+        fetch: function(url, type, data) {
+            alzod.View.show_loading();
+            var item_no = url.replace(/.*\/\/[^\/]+\//, '');
+            url = isNaN(item_no) ? url : "/api/item/" + item_no + "/";
+            alzod.Model.fetch(url, type, data);
+        }
     }
 };
 </script>
@@ -120,26 +129,24 @@ var alzod = {
     <div class="error_text">loading</div>
 </div>
 
-<div id="error_div" class="none" onclick="alzod.Controller.error.hide();">
-    e
-</div>
+<div id="error_div" class="none" onclick="alzod.View.hide_error();">e</div>
 
-<div id="all_views">
-    <div id="xxx" class="">
-        <ol>
-            <li>post: save new item</li>
-            <li>post: edit item</li>
-            <li>post: delete item</li>
-            <li>json: get item detailes</li>
-            <li>json: get all items</li>
-            <li>post: save new img</li>
-            <li>-------</li>
-            <li>css: style search elements</li>
-            <li>css: style item elements</li>
-            <li>css: style new item elements</li>
-            <li>-------</li>
-        </ol>
-    </div>
+<div id="all_views"></div>
+
+<div id="xxx" class="">
+    <ol>
+        <li>post: save new item</li>
+        <li>post: edit item</li>
+        <li>post: delete item</li>
+        <li>json: get item detailes</li>
+        <li>json: get all items</li>
+        <li>post: save new img</li>
+        <li>-------</li>
+        <li>css: style search elements</li>
+        <li>css: style item elements</li>
+        <li>css: style new item elements</li>
+        <li>-------</li>
+    </ol>
 </div>
 
 <script type="text/javascript">
@@ -150,45 +157,142 @@ var alzod = {
     view_home.append.push(logo_div);
 
     var search_form = {
-      element:"form",className:"search_box",action:"/api/item/",method:"POST"};
+        element:"form",
+        className:"search_box",
+        action:"/api/item/",
+        method:"POST",
+        append: [
+            {
+                element:"input",
+                type:"textbox",
+                name:"encode_url"
+            },
+            {
+                element:"input",
+                type:"textbox",
+                name:"type",
+                placeholder: "type"
+            },
+            {
+                element:"input",
+                type:"submit",
+                value:"Search"
+            }
+        ]
+    };
 
-    search_form.append = [
-        {element:"input",type:"textbox", name:"type", placeholder: "type"},
-        {element:"input",type:"submit", value:"Search"}
-    ];
-
-    var icons_root = {className: "icons_root", append: [
-        {   element:"a", href: "/1", className: "icon_larg",
-            onclick: function(){alzod.Model.fetch(this.href);return false;},
-            append: {element: "span", innerHTML: "المفضلة"}
+    var icons_root = {
+        className: "icons_root", 
+        append: [
+        {   
+            element:"a", 
+            href: "/1", 
+            className: "icon_larg",
+            append: {
+                element: "span", 
+                innerHTML: "المفضلة"
+            },
+            onclick: function(){
+                alzod.Controller.fetch(this.href);return false;
+            }
         },
-        {   element:"a", href: "/2", className: "icon_larg",
-            onclick: function(){alzod.Model.fetch(this.href);return false;},
-            append: {element: "span", innerHTML: "السلة"}
+        {   
+            element:"a", 
+            href: "/2", 
+            className: "icon_larg",
+            append: {
+                element: "span", 
+                innerHTML: "السلة"
+            },
+            onclick: function(){
+                alzod.Controller.fetch(this.href);return false;
+            }
         },
-        {   element:"a", href: "/login/", className: "icon_larg",
-            onclick: function(){alzod.Model.fetch(this.href);return false;},
-            append: {element: "span", innerHTML: "تسجيل"}
+        {   
+            element:"a", 
+            href: "/login/", 
+            className: "icon_larg",
+            append: {
+                element: "span", 
+                innerHTML: "تسجيل"
+            },
+            onclick: function(){
+                alzod.Controller.fetch(this.href);return false;
+            }
         },
-        {   element:"a", href: "/logout/", className: "icon_larg",
-            onclick: function(){alzod.Model.fetch(this.href);return false;},
-            append: {element: "span", innerHTML: "Logout"}
+        {   
+            element:"a", 
+            href: "/logout/", 
+            className: "icon_larg",
+            append: {
+                element: "span", 
+                innerHTML: "Logout"
+            },
+            onclick: function(){
+                alzod.Controller.fetch(this.href);return false;
+            }
         },
-        {   element:"a", href: "/4", className: "icon_larg",
-            onclick: function(){alzod.Model.fetch(this.href);return false;},
-            append: {element: "span", innerHTML: "إضافة"}
+        {   
+            element:"a", 
+            href: "/4", 
+            className: "icon_larg",
+            append: {
+                element: "span", 
+                innerHTML: "إضافة"
+            },
+            onclick: function(){
+                alzod.Controller.fetch(this.href);return false;
+            }
         },
-        {   element:"a", href: "/login/", className: "icon_larg",
-            onclick: function(){alzod.Model.fetch(this.href);return false;},
-            append: {element: "span", innerHTML: "/login/"}
+        {   
+            element:"a", 
+            href: "/login/", 
+            className: "icon_larg",
+            append: {
+                element: "span", 
+                innerHTML: "/login/"
+            },
+            onclick: function(){
+                alzod.Controller.fetch(this.href);return false;
+            }
         },
-        {   element:"a", href: "login/", className: "icon_larg",
-            onclick: function(){alzod.Model.fetch(this.href);return false;},
-            append: {element: "span", innerHTML: "login/"}
+        {   
+            element:"a", 
+            href: "/logout", 
+            className: "icon_larg",
+            append: {
+                element: "span", 
+                innerHTML: "/logout"
+            },
+            onclick: function(){
+                alzod.Controller.fetch(this.href);return false;
+            }
         },
-        {   element:"a", href: "/logout", className: "icon_larg",
-            onclick: function(){alzod.Model.fetch(this.href);return false;},
-            append: {element: "span", innerHTML: "/logout"}
+        {   
+            element:"a", 
+            href: "login/", 
+            className: "icon_larg",
+            style: "border: 2px solid red;",
+            append: {
+                element: "span", 
+                innerHTML: "error: login/ "
+            },
+            onclick: function(){
+                alzod.Controller.fetch(this.href);return false;
+            }
+        },
+        {   
+            element:"a", 
+            href: "https://jsonplaceholder.typicode.com/users/3", 
+            className: "icon_larg",
+            style: "border: 2px solid red;",
+            append: {
+                element: "span", 
+                innerHTML: "https json place holder "
+            },
+            onclick: function(){
+                alzod.Controller.fetch(this.href);return false;
+            }
         }
     ]};
 
@@ -196,11 +300,9 @@ var alzod = {
     view_home.append.push(icons_root);
     document.getElementById('all_views').append_by_obj(view_home);
 
-
-    var initial_url = window.location.pathname.replace(/\//g, "");
+    var initial_url = window.location.pathname.replace(/(?:^\/|\/$)/g, "");
     if(!isNaN(initial_url) && 0 < initial_url.length) {
-        alzod.Controller.initial_url = "/" + initial_url;
-        alzod.Model.fetch("/api/item/" + initial_url);
+        alzod.Controller.fetch("/api/item/" + initial_url + "/");
     }
 })();
 </script>
