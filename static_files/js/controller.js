@@ -11,7 +11,7 @@
             clearTimeout(timer);
             if(Controller.handle_repetition < Controller.max_repetition) {
                 timer = setTimeout(check_add_method, 100);
-                console.log('add not in View');
+                console.warn('add not in View');
             }
         }
     };
@@ -19,51 +19,11 @@
     setTimeout(check_add_method, 1000);
 })(function(View, Model, Controller) {
 
-HTMLFormElement.prototype.serialize = function() {
-    var obj = [].reduce.call(this.elements, function(data, elm) {
-        var is_valid = false;
-        if(elm.name && elm.value) {
-            if(elm.type != 'radio' && elm.type != 'checkbox') {
-                is_valid = true;
-            }
-            else { is_valid = elm.checked; }
-        }
-        if (is_valid) {
-            if (elm.type === 'checkbox') {
-                data[elm.name] = (data[elm.name] || []).concat(elm.value);
-            }
-            else if (elm.options && elm.multiple) {
-                data[elm.name] = [].reduce.call(elm, function(val, option) {
-                    return option.selected ? val.concat(option.value) : val;
-                }, []);
-            }
-            else {
-                data[elm.name] = elm.value;
-            }
-        }
-        return data;
-    }, {});
-    if(obj.encode_url === "url") {
-        var url_data = ""; var mark = "";
-        for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                url_data += mark + key + "=" + encodeURIComponent(obj[key]);
-                mark = "&";
-            }
-        }
-        return url_data
-    }
-    return obj;
-};
-
-
 document.onsubmit = function(event) {
     event.preventDefault();
     event.stopPropagation();
     try {
-        var form_data = event.target.serialize();
-        form_data.event_target = event.target;
-        Controller.fetch(event.target.action, "post", form_data);
+        Controller.fetch(event.target.action, "post", event.target);
     }
     catch(error) { 
         View.show_error("on submit form error: " + error); 
@@ -75,7 +35,7 @@ window.onpopstate = function(event) {
     if(event.state) {
         if(event.state.index >= View.current_index) {
             View.current_index++;
-            View.handle_ok_response(event.state.content);
+            View.handle_200_ok(event.state.content);
             return null;
         }
     }
@@ -91,7 +51,7 @@ window.onpopstate = function(event) {
 // Controller methods:
 
 
-Controller.handle_response = function(status, url, request, data) {
+Controller.handle_response = function(status, url, request, form) {
     if(1 < status) {
         var content = "";
         try { 
@@ -103,39 +63,45 @@ Controller.handle_response = function(status, url, request, data) {
                 .replace(/(?:^\/|\/$)/g, "")
                 .replace("api/item/", "");
         } 
-        catch(error) { View.show_error("JSON.parse(response): " + error); }
-
-        if(typeof content === "object" && content.constructor === Object) {
-            Controller.handle_JSON_response(status, content, data);
-        } 
-        else { View.show_error('response is not JSON!'); }
+        catch(error) { View.show_error('response is not JSON!'); }
+        Controller.handle_JSON_response(status, content, form);
     } 
     else { View.show_error('Internet connection is offline!'); }
 };
 
 
-Controller.handle_JSON_response = function(status, content, data) {
+Controller.handle_fetch_script = function(content) { 
+    if(content.type in View.scripts) { 
+        View.handle_200_ok(content); 
+    }
+    else { 
+        View.show_error('fetch_script error. '+ content.type+' not found!');
+    }
+};
+
+
+Controller.handle_JSON_response = function(status, content, form) {
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-    console.log(">>>>>>>>>>>status",status);
-    console.log(">>>>>>>>>>>content",content);
-    console.log(">>>>>>>>>>>data",data);
-    if(status == 200 || status == 201) { // 200 OK, 201 Created
-        View.handle_ok_response(content);
+    if(status == 200 || status == 201) { // 201 Created
+        if(form) {
+            var post_view_id = form.querySelector("#post_view_id").value;
+            View.remove(post_view_id);
+        }
+        View.handle_200_ok(content);
     }
     else if(status == 400) { // 400 Bad Request
-        View.handle_form_error(content, data.event_target);
+        View.handle_400_bad_request(content, form);
     }
     else if(status == 401) { // 401 Unauthorized
-        console.warn(content, data);
-        console.log(data.event_target);
+        console.warn("401 Unauthorized");
         View.hide_loading();
     }
     else if(status == 403) { // 403 Forbidden
-        console.log("403 Forbidden");
+        console.warn("403 Forbidden");
         View.hide_loading();
     }
     else if(status == 404) { // 404 Not Found
-        console.log("404 Not Found");
+        console.warn("404 Not Found");
         View.hide_loading();
     }
     else {
@@ -151,10 +117,7 @@ Controller.handle_JSON_response = function(status, content, data) {
 Controller.push_to_history = function(content) {
     if(!content.in_history) {
         content.in_history = true;
-        var page_info = {
-            index: View.current_index++, 
-            content: content
-        };
+        var page_info = {index: View.current_index++, content: content};
         var url = page_info.content.url_clean;
         url = isNaN(url) ? url : "/" + url;
         if(View.blocked(url)) {
@@ -162,10 +125,48 @@ Controller.push_to_history = function(content) {
         }
         try { window.history.pushState(page_info, null, url); }
         catch(error) { 
-            window.history.pushState(page_info, null, "/error")
+            window.history.pushState(page_info, null, "/error");
             View.show_error("history.pushState: " + error); 
         }
     }
+};
+
+
+Controller.Form = function(action, array, view_id, encode_url) {
+  if(action && array) {
+    var form = {element:"form", action:action, method:"POST", append:[]};
+    for (let i = 0; i < array.length; i++) {
+        var obj = {};
+        if(typeof array[i] === "object" && array[i].constructor === Object) {
+            for (const key in array[i]) {
+                if (array[i].hasOwnProperty(key)) {
+                    obj[key] = array[i][key];
+                }
+            }
+        }
+        else { 
+            obj = {
+                element: "input", 
+                type: "textbox", 
+                name: array[i], 
+                placeholder: array[i]
+            };
+            if(array[i] == "password") { obj.type = "password"; }
+        }
+        form.append.push(obj);
+    }
+    if(view_id) {
+        form.append.push({ element: "input", id: "post_view_id", 
+            value: view_id, type: "hidden"}); 
+    }
+    if(encode_url) {
+        form.append.push({ element: "input", name: "encode_url", 
+            value: "url", type: "hidden"}); 
+    }
+    form.append.push({element: "input", value: "Submit", type: "submit"});
+    return form; 
+  }
+  else { View.show_error('Controller.Form(): action not found!'); }
 };
 
 
@@ -177,8 +178,8 @@ Controller.push_to_history = function(content) {
 
 Controller.fetch("/api/auth/");
 
-if(Controller.initial_data) {
-    var args = Controller.initial_data;
+if(Controller.initial_item) {
+    var args = Controller.initial_item;
     Controller.handle_response(args[0], args[1], args[2]);
 }
 else { View.show('view_home'); }

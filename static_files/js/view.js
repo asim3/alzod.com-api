@@ -3,7 +3,7 @@
     var Model = alzod.Model;
     var Controller = alzod.Controller;
     if("View" in alzod) { view(View, Model, Controller); }
-    else { console.log('View not in alzod') }
+    else { throw new Error('View not in alzod') }
 })(function(View, Model, Controller) {
 
 var ViewBase = function(content, view_name) {
@@ -60,7 +60,7 @@ View.add = function(content) {
         var view = ViewBase(content);
         try {
             document.getElementById('all_views').append_by_obj({
-                className: "none", id: view.id, append: [
+                id: view.id, className: "none", append: [
                     View.scripts.head(view),
                     View.scripts[view.type](view)
                 ]
@@ -134,7 +134,7 @@ View.remove_last_view = function() {
 };
 
 
-View.handle_ok_response = function(content) {
+View.handle_200_ok = function(content) {
     if(content.type in View.scripts) {
         if(View.blocked(content.url_clean)) {
             View.handle_blocked(content);
@@ -145,10 +145,10 @@ View.handle_ok_response = function(content) {
 };
 
 
-View.handle_form_error = function(obj, event_target) {
+View.handle_400_bad_request = function(obj, form) {
     for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
-            var element = event_target.querySelector("[name="+key+"]");
+            var element = form.querySelector("[name="+key+"]");
             if(element){ element.style = "border: 2px solid red;"; }
         }
     }
@@ -167,8 +167,6 @@ View.blocked = function(url) {
 
 
 View.handle_blocked = function(obj) {
-    console.log("%c blocked " + obj.url, 
-        "color: #fff; background: red;font-size: 14px;");
 
     if(obj.type === "user") {
         if(obj.url_clean === "login") {

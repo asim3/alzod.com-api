@@ -1,11 +1,48 @@
 (function(model) {
-    var View = alzod.View;
     var Model = alzod.Model;
     var Controller = alzod.Controller;
-    if("Model" in alzod) { model(View, Model, Controller); }
-    else { console.log('Model not in alzod') }
-})(function(View, Model, Controller) {
+    if("Model" in alzod) { model(Model, Controller); }
+    else { throw new Error('Model not in alzod'); }
+})(function(Model, Controller) {
 
+HTMLFormElement.prototype.serialize = function() {
+    var obj = [].reduce.call(this.elements, function(data, elm) {
+        var is_valid = false;
+        if(elm.name && elm.value) {
+            if(elm.type != 'radio' && elm.type != 'checkbox') {
+                is_valid = true;
+            }
+            else { is_valid = elm.checked; }
+        }
+        if (is_valid) {
+            if (elm.type === 'checkbox') {
+                data[elm.name] = (data[elm.name] || []).concat(elm.value);
+            }
+            else if (elm.options && elm.multiple) {
+                data[elm.name] = [].reduce.call(elm, function(val, option) {
+                    return option.selected ? val.concat(option.value) : val;
+                }, []);
+            }
+            else {
+                data[elm.name] = elm.value;
+            }
+        }
+        return data;
+    }, {});
+    if(obj.encode_url === "url") {
+        var url_data = ""; var mark = "";
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                url_data += mark + key + "=" + encodeURIComponent(obj[key]);
+                mark = "&";
+            }
+        }
+        return url_data
+    }
+    return obj;
+};
+
+    
 // Model attributes:
 
 
@@ -24,10 +61,10 @@ Model.post = function(url, type, data) {
     if(data === undefined) { request.send(); }
     else {
         var Content_type = 'application/x-www-form-urlencoded';
-        var post_data = data;
-        if(typeof data === "object" && data.constructor === Object) {
+        var post_data = data.serialize();
+        if(typeof post_data === "object" && post_data.constructor === Object) {
             Content_type = 'application/json; charset=utf-8';
-            post_data = JSON.stringify(data);
+            post_data = JSON.stringify(post_data);
         }
         if("get_cookie" in Model) {
             request.setRequestHeader(
@@ -44,16 +81,12 @@ Model.fetch_script = function(content) {
     var script = document.createElement('script');
     script.id = "js_script_" + content.type;
     script.type = 'text/javascript';
-    script.onload = function() { 
-      if(content.type in View.scripts) { View.handle_ok_response(content); }
-      else { 
-        View.show_error('fetch_script error. '+ content.type+' not found!');
-      }
+    script.onload = function() {
+        Controller.handle_fetch_script(content);
     };
     script.onerror = function() {
         var error_text = 'adding script to head error!';
-        View.show_error(error_text);
-        window.onerror(error_text, "controller.js")
+        window.onerror(error_text, "js/model.js")
     };
     head.appendChild(script);
     script.src = "/static/js/"+ content.type +".js";
