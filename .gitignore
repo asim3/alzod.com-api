@@ -10,4 +10,4 @@ MEDIA_ROOT
 
 .dropbox
 
-venv
+.venv
