@@ -9,16 +9,6 @@ from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from alzod.permissions import ReadOnly
 from .serializers import AuthSerializer, UserSerializer
 
-class AuthUserView(ListModelMixin, GenericViewSet):
-    permission_classes = (ReadOnly,)
-    serializer_class = AuthSerializer
-    queryset = User.objects.all()
-
-    def list(self, request, *args, **kwargs):
-        queryset = request.user
-        serializer = self.get_serializer(queryset)
-        return Response(serializer.data)
-
 
 class UserLoginView(LoginView):
     redirect_authenticated_user = True

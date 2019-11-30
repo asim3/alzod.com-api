@@ -1,26 +1,34 @@
 from django.urls import include, path
 from django.contrib import admin
-from django.views.generic import TemplateView
-from .routers import router
-from members.views import AuthUserView, UserLoginView, UserLogoutView
-
-
-landing_page = TemplateView.as_view(template_name="index.html")
+from items.urls import items_router 
+from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView,TokenVerifyView
+from .register import register_view
 
 urlpatterns = [
-    path('api/', include(router.urls)),
-    
-    path('login/', UserLoginView.as_view()),
-    path('logout/', UserLogoutView.as_view()),
-
-    path('admin/', admin.site.urls),
-
-
-    # landing page
-    path('user/', landing_page ),
-    path('user/<int:id>', landing_page ), 
-    path('user/<int:id>/', landing_page ),
-    path('<int:id>', landing_page ), 
-    path('<int:id>/', landing_page ),
-    path('', landing_page ),
+  # path('<pk:int>/', include(individual_router.urls)),
+  # path('i/', include(individual_router.urls)),
+  # path('g/', include(group_router.urls)),
+  path('t/', include(items_router.urls)),
+  path('token/', TokenObtainPairView.as_view(), name='token_obtain'),
+  path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+  path('register/', register_view, name='register'),
+  path('admin/', admin.site.urls),
 ]
+
+
+# Members
+# path('register/', "view"),
+
+# Tasks
+# path('tasks/', "view"),
+# path('report/', "view"),
+
+# links    
+# path('starred/', "view"),
+# path('favorite/', "view"),
+# path('follow/', "view"),
+# path('cart/', "view"),
+
+# Items
+# path('new/', "view"),
+# path('edit/<int:id>/', "view"),
