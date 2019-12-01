@@ -3,10 +3,10 @@ from django.contrib import admin
 
 
 urlpatterns = [
-  # path('<pk:int>/', include("individual.urls")),
-  # path('i/', include("individual.urls")),
+  path('f/', include("files.urls")),
+  path('content/', include("contents.urls")),
+  # path('u/', include("user.urls")),
   # path('g/', include("group.urls")),
-  path('test/', include("items.urls")),
   path('token/', include("tokens.urls")),
   path('admin/', admin.site.urls),
 ]
