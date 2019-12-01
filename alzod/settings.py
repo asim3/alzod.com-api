@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -13,7 +14,7 @@ SECRET_KEY = 't_hhe)j(=@e@r$zmq^dg-%=#g%^4)zkj1gd28ufbn3*(p%1fln'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.100.81']
+ALLOWED_HOSTS = ['localhost', '192.168.100.81']
 
 
 # Application definition
@@ -97,7 +98,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Riyadh'
 
 USE_I18N = True
 
@@ -128,4 +129,10 @@ REST_FRAMEWORK = {
     # 'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
     # 'rest_framework.permissions.DjangoObjectPermissions',
   )
+}
+
+SIMPLE_JWT = {
+  'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+  'REFRESH_TOKEN_LIFETIME': timedelta(days=3)
+  # 'ALGORITHM': 'HS256',
 }
