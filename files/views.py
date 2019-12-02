@@ -1,17 +1,9 @@
+from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView
 
 
-class AddView():
+class AddView(CreateAPIView):
+  "serializer_class = ccc"
+
+
+class UpdateView(RetrieveUpdateDestroyAPIView):
   pass
-
-
-class UpdateView():
-  pass
-
-
-class DeleteView():
-  pass
-
-
-class DisplayView():
-  pass
-
