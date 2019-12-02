@@ -1,4 +1,7 @@
-from django.shortcuts import render
+
+
+class AddView():
+  pass
 
 
 class UpdateView():

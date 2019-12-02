@@ -1,17 +1,17 @@
 
 
-class AddFileView():
+class AddView():
   pass
 
 
-class AddBranchFileView():
+class UpdateView():
   pass
 
 
-class DeleteFileView():
+class DeleteView():
   pass
 
 
-class FileContentsView():
+class DisplayView():
   pass
 
