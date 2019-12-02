@@ -11,8 +11,8 @@ from django.db.models import (
 
 
 class FileModel(Model):
-  fk_host = ForeignKey("hosts.HostModel", on_delete=CASCADE)
-  fk_parent = ForeignKey("self", on_delete=CASCADE, null=True)
+  fk_parent = ForeignKey("self", on_delete=CASCADE, blank=True, null=True)
+  fk_user = ForeignKey(User, on_delete=CASCADE)
   
   name = CharField(max_length=300)
   photo = ImageField(upload_to="files/", blank=True, null=True)

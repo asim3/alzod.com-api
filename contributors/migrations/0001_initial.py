@@ -10,20 +10,22 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
+        ('files', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='FileModel',
+            name='ContributorModel',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=300)),
-                ('photo', models.ImageField(blank=True, null=True, upload_to='files/')),
-                ('is_public', models.BooleanField(default=False)),
-                ('issue_date', models.DateTimeField(auto_now_add=True)),
-                ('update_date', models.DateTimeField(auto_now=True)),
-                ('fk_parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='files.FileModel')),
+                ('active', models.BooleanField(default=False)),
+                ('can_read_private', models.BooleanField(default=False)),
+                ('can_update', models.BooleanField(default=False)),
+                ('can_remove', models.BooleanField(default=False)),
+                ('can_update_contributors', models.BooleanField(default=False)),
+                ('can_remove_contributors', models.BooleanField(default=False)),
+                ('fk_file', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='files.FileModel')),
                 ('fk_user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
         ),

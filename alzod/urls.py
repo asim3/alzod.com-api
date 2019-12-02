@@ -3,10 +3,9 @@ from django.contrib import admin
 
 
 urlpatterns = [
-  path('f/', include("files.urls")),
   path('content/', include("contents.urls")),
-  # path('u/', include("user.urls")),
-  # path('g/', include("group.urls")),
+  path('file/', include("files.urls")),
+  path('contributors/', include("contributors.urls")),
   path('token/', include("tokens.urls")),
   path('admin/', admin.site.urls),
 ]
