@@ -29,6 +29,8 @@ INSTALLED_APPS = [
   'rest_framework',
   'rest_framework_simplejwt.token_blacklist',
   'tokens',
+  'hosts',
+  'guests',
   'files',
   'contents',
 ]
