@@ -6,6 +6,7 @@ from django.db.models import (
   ImageField,
   BooleanField,
   DateTimeField,
+  DateField,
   CASCADE,
 )
 

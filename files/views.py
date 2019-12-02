@@ -1,3 +1,17 @@
-from django.shortcuts import render
 
-# Create your views here.
+
+class AddFileView():
+  pass
+
+
+class AddBranchFileView():
+  pass
+
+
+class DeleteFileView():
+  pass
+
+
+class FileContentsView():
+  pass
+

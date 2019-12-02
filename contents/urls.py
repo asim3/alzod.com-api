@@ -1,7 +1,8 @@
 from django.urls import path
-# from .views import 
+from .views import UpdateView, DeleteView
 
 
 urlpatterns = [
-  # path('', TokenObtainPairView.as_view(), name='token_obtain'),
+  # path('<int:pk>/update/', UpdateView.as_view(), name='content_update'),
+  # path('<int:pk>/delete/', DeleteView.as_view(), name='content_delete'),
 ]

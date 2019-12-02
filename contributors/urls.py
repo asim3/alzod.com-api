@@ -1,9 +1,9 @@
 from django.urls import path
-# from .views import 
+from .views import AddView, UpdateView, DeleteView
 
 
 urlpatterns = [
-  # path('add/', TokenObtainPairView.as_view(), name='token_obtain'),
-  # path('update/', TokenObtainPairView.as_view(), name='token_obtain'),
-  # path('delete/', TokenObtainPairView.as_view(), name='token_obtain'),
+  # path('<int:fk_file>/add/', AddView.as_view(), name='contributor_add'),
+  # path('<int:fk_file>/update/', UpdateView.as_view(), name='contributor_update'),
+  # path('<int:fk_file>/delete/', DeleteView.as_view(), name='contributor_delete'),
 ]
