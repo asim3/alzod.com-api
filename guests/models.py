@@ -11,7 +11,7 @@ from django.db.models import (
 
 
 class GuestModel(Model):
-  fk_host = ForeignKey("files.HostModel", on_delete=CASCADE)
+  fk_host = ForeignKey("hosts.HostModel", on_delete=CASCADE)
   fk_user = ForeignKey(User, on_delete=CASCADE)
 
   active = BooleanField()

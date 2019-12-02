@@ -11,7 +11,7 @@ from django.db.models import (
 
 
 class FileModel(Model):
-  fk_host = ForeignKey("files.HostModel", on_delete=CASCADE)
+  fk_host = ForeignKey("hosts.HostModel", on_delete=CASCADE)
   fk_parent = ForeignKey("self", on_delete=CASCADE, null=True)
   
   name = CharField(max_length=300)
