@@ -1,10 +1,15 @@
 from django.urls import path
-from .views import AddView, UpdateView
+from .views import (
+  AddView,
+  UpdateView,
+  ListFileContentsView,
+  ListUserFilesView,
+)
 
 
 urlpatterns = [
   path('add/', AddView.as_view(), name='file_add'),
   path('<int:pk>/update/', UpdateView.as_view(), name='file_update'),
-  # path('<int:pk>/delete/', DeleteView.as_view(), name='file_delete'),
-  # path('<int:pk>/', DisplayView.as_view(), name='file_display'),
+  path('<int:pk>/', ListFileContentsView.as_view(), name='list_file_contents'),
+  path('', ListUserFilesView.as_view(), name='list_user_files'),
 ]
