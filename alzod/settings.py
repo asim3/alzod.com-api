@@ -128,6 +128,9 @@ REST_FRAMEWORK = {
     # 'rest_framework.permissions.DjangoModelPermissions',
     # 'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
     # 'rest_framework.permissions.DjangoObjectPermissions',
+  ),
+  'DEFAULT_PARSER_CLASSES': (
+    'rest_framework.parsers.JSONParser',
   )
 }
 

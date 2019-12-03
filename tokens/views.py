@@ -14,7 +14,7 @@ def get_data_from_json(request):
   try:
     return json.loads(request.body)
   except:
-    return {'json.loads': 'error'}
+    return {'json_loads': 'error'}
 
 
 @csrf_exempt
@@ -24,10 +24,10 @@ def register_view(request):
     if form.is_valid():
       user = form.save()
       refresh = RefreshToken.for_user(user)
-      r = str(refresh)
-      a = str(refresh.access_token)
+      new_refresh = str(refresh)
+      new_access = str(refresh.access_token)
       return HttpResponse(
-        '{"refresh":"%s", "access":"%s"}' % (r, a,), 
+        '{"refresh":"%s", "access":"%s"}' % (new_refresh, new_access,), 
         content_type="application/json"
       )
     
