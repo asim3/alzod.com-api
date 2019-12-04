@@ -37,7 +37,9 @@ class ListUserFilesSerializer(ModelSerializer):
 
 
 class ListFileContentsSerializer(ModelSerializer):
+  # import from content.serializer
+  
   class Meta:
     model = FileModel
-    fields = ()
-    read_only_fields = ("pk", "fk_user", "fk_parent", "name", "photo", "is_public",)
+    fields = ("pk", "fk_user", "parents", "name", "photo", "is_public",)
+    depth = 0

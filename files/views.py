@@ -1,6 +1,6 @@
 from rest_framework.generics import CreateAPIView, UpdateAPIView, ListAPIView
-from rest_framework.exceptions import ValidationError
 from .models import FileModel
+from .validators import is_fk_parent_valid
 from .serializers import (
   AddFileSerializer,
   UpdateFileSerializer,
@@ -14,18 +14,8 @@ class AddView(CreateAPIView):
 
   def create(self, request, *args, **kwargs):
     request.data['fk_user'] = request.user.id
+    is_fk_parent_valid(request)
     return super().create(request, *args, **kwargs)
-
-  def perform_create(self, serializer):
-    fk_parent = serializer.data.get('fk_parent')
-    if fk_parent:
-      parent_user = FileModel.objects.get(pk=fk_parent).fk_user.pk
-      
-      request_user = self.request.user.id
-      fk_user = serializer.data.get('fk_user')
-      
-      raise ValidationError(f"aaaa {parent_user} {request_user}")
-    serializer.save()
 
 
 class UpdateView(UpdateAPIView):
@@ -34,12 +24,9 @@ class UpdateView(UpdateAPIView):
   def get_queryset(self):
     return self.request.user.files
 
-  def perform_update(self, serializer):
-    fk_parent = serializer.data.get('fk_parent')
-    if fk_parent:
-      request_user = self.request.user.id
-      raise ValidationError(f"aaaa {fk_parent} {request_user}")
-    serializer.save()
+  def update(self, request, *args, **kwargs):
+    is_fk_parent_valid(request, kwargs.get('pk'))
+    return super().update(request, *args, **kwargs)
     
 
 class ListFileContentsView(ListAPIView):
