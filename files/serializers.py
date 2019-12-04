@@ -12,9 +12,16 @@ class AddFileSerializer(ModelSerializer):
 class UpdateFileSerializer(ModelSerializer):
   class Meta:
     model = FileModel
-    fields = ("pk", "fk_parent", "name", "photo", "is_public",)
-    read_only_fields = ['fk_user']
-
+    depth = 1
+    fields = ("fk_parent", "name", "photo", "is_public",)
+    read_only_fields = (
+      "pk",
+      "fk_user",
+      "children",
+      "issue_date",
+      "update_date",
+      "delete_date",
+    )
 
 class UserFilesSerializer(ModelSerializer):
   class Meta:
@@ -36,12 +43,3 @@ class UserSerializer(ModelSerializer):
   class Meta:
     model = User
     fields = ("id", "username", "first_name", "last_name", "email",)
-
-
-class FileContentsSerializer(ModelSerializer):
-  # import from content.serializer
-  
-  class Meta:
-    model = FileModel
-    fields = ("contents", "children", "parents", "name", "photo", "is_public",)
-    depth = 0

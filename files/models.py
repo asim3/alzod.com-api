@@ -25,8 +25,15 @@ class FileModel(Model):
   update_date = DateTimeField(auto_now=True)
   delete_date = DateField(blank=True, null=True)
 
+
   def __str__(self):
-    parent = self.fk_parent or ""
+    if self.fk_parent:
+      return f"{self.fk_parent.id} / {self.id} - {self.name}"
+    return f"/ {self.id} - {self.name}"
+
+
+  def parents_str(self):
+    parent = self.parents_str() or ""
     name = self.name
     if len(name) > 11:
       name = self.name[:11].strip() + "..."

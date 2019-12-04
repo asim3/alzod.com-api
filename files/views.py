@@ -1,11 +1,9 @@
-from rest_framework.generics import CreateAPIView, UpdateAPIView, ListAPIView
-from .models import FileModel
+from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView
 from .validators import is_fk_parent_valid
 from .serializers import (
   AddFileSerializer,
   UpdateFileSerializer,
   UserFilesSerializer,
-  FileContentsSerializer,
 )
 
 
@@ -18,7 +16,7 @@ class AddView(CreateAPIView):
     return super().create(request, *args, **kwargs)
 
 
-class UpdateView(UpdateAPIView):
+class UpdateView(RetrieveUpdateAPIView):
   serializer_class = UpdateFileSerializer
 
   def get_queryset(self):
@@ -33,17 +31,4 @@ class ListUserFilesView(ListAPIView):
   serializer_class = UserFilesSerializer
 
   def get_queryset(self):
-    return self.request.user.files.all()
-
-
-# ------------
-
-
-class ListFileContentsView(ListAPIView):
-  serializer_class = FileContentsSerializer
-
-  def get_queryset(self):
-    # get cheldern 
-    # get all content
-    # get parent list
     return self.request.user.files.all()
