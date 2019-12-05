@@ -1,4 +1,5 @@
-from rest_framework.generics import CreateAPIView, RetrieveUpdateAPIView, ListAPIView
+from rest_framework.generics import (
+  CreateAPIView, RetrieveUpdateAPIView, ListAPIView)
 from .validators import is_fk_parent_valid
 from .serializers import FileSerializer
 

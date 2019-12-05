@@ -25,7 +25,7 @@ def check_duplicate_parent_id(pk, parent_pk, parents_ids):
       raise ValidationError({'fk_parent': [err]})
 
 
-def is_fk_parent_valid(request, pk=None):
+def is_fk_parent_valid(request, kwargs_pk=None):
   fk_parent = request.data.get('fk_parent')
   if fk_parent:
     if not isinstance(fk_parent, int):
@@ -38,5 +38,5 @@ def is_fk_parent_valid(request, pk=None):
     
     check_maximum_allowed_files(parent.children.count())
     check_user_file_permissions(parent.fk_user.id, request.user.id)
-    check_duplicate_parent_id(pk, parent.pk, parent.parents_ids())
+    check_duplicate_parent_id(kwargs_pk, parent.pk, parent.parents_ids())
   return True

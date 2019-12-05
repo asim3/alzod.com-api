@@ -3,8 +3,8 @@ from django.contrib import admin
 
 
 urlpatterns = [
-  path('content/', include("contents.urls")),
   path('file/', include("files.urls")),
+  path('content/', include("contents.urls")),
   path('contributors/', include("contributors.urls")),
   path('token/', include("tokens.urls")),
   path('admin/', admin.site.urls),

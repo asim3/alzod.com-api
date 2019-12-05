@@ -11,10 +11,11 @@ from django.db.models import (
   CASCADE,
 )
 
+content_types = ()
 
 class ContentModel(Model):
   id = BigAutoField(primary_key=True)
   fk_file = ForeignKey("files.FileModel", on_delete=CASCADE, related_name="contents")
   
-  content_type = CharField(max_length=1)
-  text = TextField(blank=True, null=True)
+  content_type = CharField(max_length=1,choices=content_types)
+  text = TextField()
