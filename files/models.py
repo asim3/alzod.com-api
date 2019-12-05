@@ -1,15 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.db.models import (
-  Model,
-  BigAutoField,
-  ForeignKey,
-  CharField,
-  ImageField,
-  BooleanField,
-  DateTimeField,
-  DateField,
-  CASCADE,
+  Model, CASCADE, BigAutoField, ForeignKey, BooleanField, CharField,
+  ImageField, DateTimeField, DateField,
 )
 
 
@@ -25,43 +18,61 @@ class FileModel(Model):
   update_date = DateTimeField(auto_now=True)
   delete_date = DateField(blank=True, null=True)
 
-
   def __str__(self):
     if self.fk_parent:
       return f"{self.fk_parent.id} / {self.id} - {self.name}"
     return f"/ {self.id} - {self.name}"
 
-
-  def parents_str(self):
-    parent = self.parents_str() or ""
-    name = self.name
-    if len(name) > 11:
-      name = self.name[:11].strip() + "..."
-    return f"{parent}/{name}"
-
-
-  def parents(self):
-    if self.fk_parent:
-      _parents = self.fk_parent.parents()
-      if _parents:
-        return [*_parents, self.fk_parent.name]
-      return [self.fk_parent.name]
-
-
   def parents_ids(self):
+    """
+      For Validation Checks
+    """
     if self.fk_parent:
-      _parents_ids = self.fk_parent.parents_ids()
-      if _parents_ids:
-        return [*_parents_ids, self.fk_parent.id]
+      all_parents_ids = self.fk_parent.parents_ids()
+      if all_parents_ids:
+        return [*all_parents_ids, self.fk_parent.id]
       return [self.fk_parent.id]
 
-
   def clean(self):
-    err = "File cannot be parent of himself."
-    if self.pk == self.fk_parent.pk:
-      raise ValidationError({'fk_parent': err})
-    
-    parents_ids = self.parents_ids()
-    if parents_ids:
-      if self.pk in parents_ids:
+    if self.fk_parent:
+      err = "File cannot be parent of himself."
+      if self.pk == self.fk_parent.pk:
         raise ValidationError({'fk_parent': err})
+    
+      if 9 < self.fk_parent.children.count():
+        raise ValidationError({
+          'fk_parent': "Parent file reached maximum allowed files."})
+
+      parents_ids = self.parents_ids()
+      if parents_ids:
+        if self.pk in parents_ids:
+          raise ValidationError({'fk_parent': err})
+
+  def parents_as_list(self, i=1):
+    if self.fk_parent and i < 5:
+      all_parents = self.fk_parent.parents_as_list(i + 1)
+      parent = {"order": i, "id":self.fk_parent.id,"name":self.fk_parent.name}
+      if all_parents:
+        return [*all_parents, parent]
+      return [parent]
+
+  def user_as_dict(self):
+    full_name = self.fk_user.first_name + " " + self.fk_user.last_name
+    return {
+      "id": self.fk_user.pk,
+      "username": self.fk_user.pk,
+      "name": full_name.strip(),
+      "email": self.fk_user.email
+    }
+
+  def children_as_list(self):
+    data = []
+    for child in self.children.all():
+      child_photo = child.photo or {"url": "http://localhost:8000/"}
+      data.append({
+        "id": child.pk,
+        "name": child.name,
+        "photo": child_photo.get("url"),
+        "is_public": child.is_public
+      })
+    return data
