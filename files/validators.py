@@ -1,5 +1,6 @@
 from rest_framework.exceptions import ValidationError
 from .models import FileModel
+from .permissions import check_user_file_permissions
 
 
 def check_maximum_allowed_files(total):
@@ -8,12 +9,6 @@ def check_maximum_allowed_files(total):
     if max_length < total:
       err = "Parent file reached maximum allowed files."
       raise ValidationError({'fk_parent': [err]})
-
-
-def check_user_file_permissions(user_id, parent_user_id):
-  if user_id != parent_user_id:
-    err = "You do not have permissions on parent file."
-    raise ValidationError({'fk_parent': [err]})
 
 
 def check_duplicate_parent_id(pk, parent_pk, parents_ids):
@@ -38,6 +33,6 @@ def is_fk_parent_valid(request, kwargs_pk=None):
       raise ValidationError({'fk_parent': [err]})
     
     check_maximum_allowed_files(parent.children.count())
-    check_user_file_permissions(parent.fk_user.id, request.user.id)
     check_duplicate_parent_id(kwargs_pk, parent.pk, parent.parents_ids())
+    check_user_file_permissions(parent.fk_user, request.user)
   return True

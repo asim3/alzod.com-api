@@ -18,3 +18,6 @@ class ContentModel(Model):
   
   content_type = CharField(max_length=1)
   text = TextField()
+  
+  # content_type = CharField(max_length=2)
+  # text = CharField(max_length=1000)
