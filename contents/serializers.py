@@ -10,8 +10,8 @@ from .models import ContentModel
 
 class ContentSerializer(ModelSerializer):
   # A `HiddenField` does not take input from the user, or present any output
-  fk_file = HiddenField(default=CreateOnlyDefault())
+  fk_file = HiddenField(default=CreateOnlyDefault(1))
 
   class Meta:
     model = ContentModel
-    fields = ("content_type", "text",)
+    fields = ("fk_file", "content_type", "text",)

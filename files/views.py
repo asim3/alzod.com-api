@@ -20,11 +20,11 @@ class UpdateView(RetrieveUpdateAPIView):
     return super().update(request, *args, **kwargs)
 
   def get_queryset(self):
-    return self.request.user.files
+    return self.request.user.files.all()
 
 
 class UserFilesView(ListAPIView):
   serializer_class = FileSerializer
 
   def get_queryset(self):
-    return self.request.user.files
+    return self.request.user.files.all()

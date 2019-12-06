@@ -11,6 +11,9 @@ class ListAddView(ListCreateAPIView):
     is_fk_file_valid(request)
     return super().create(request, *args, **kwargs)
 
+  def get_queryset(self):
+    file_pk = self.kwargs.get("file_pk")
+    return self.request.user.files.filter(pk=file_pk)
 
 class UpdateView(RetrieveUpdateAPIView):
   serializer_class = ContentSerializer

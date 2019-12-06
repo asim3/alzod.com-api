@@ -16,9 +16,9 @@ class FileSerializer(ModelSerializer):
   pk = IntegerField(read_only=True)
   issue_date = DateTimeField(read_only=True)
   update_date = DateTimeField(read_only=True)
-  user_as_dict = DictField(read_only=True)
-  parents_as_list = ListField(read_only=True)
-  children_as_list = ListField(read_only=True)
+  file_user = DictField(read_only=True, source="user_as_dict")
+  file_parents = ListField(read_only=True, source="parents_as_list")
+  file_children = ListField(read_only=True, source="children_as_list")
   # A `HiddenField` does not take input from the user, or present any output
   fk_user = HiddenField(default=CurrentUserDefault())
 
@@ -33,8 +33,8 @@ class FileSerializer(ModelSerializer):
       "issue_date",
       "update_date",
       "delete_date",
-      "user_as_dict",
-      "parents_as_list",
-      "children_as_list",
+      "file_user",
+      "file_parents",
+      "file_children",
       "fk_user",
     )
