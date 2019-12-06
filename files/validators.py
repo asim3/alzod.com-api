@@ -3,8 +3,9 @@ from .models import FileModel
 
 
 def check_maximum_allowed_files(total):
+  max_length = 9
   if total:
-    if 9 < total:
+    if max_length < total:
       err = "Parent file reached maximum allowed files."
       raise ValidationError({'fk_parent': [err]})
 
