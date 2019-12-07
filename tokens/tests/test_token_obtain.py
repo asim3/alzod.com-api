@@ -17,7 +17,7 @@ def get_registered_user():
   response = client.post(url, data, format='json')
   if response.status_code == 200:
     return response.json()
-  print(response.status_code)
+  return {}
 
 
 class CheckRegister(APITestCase):
