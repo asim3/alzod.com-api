@@ -22,3 +22,6 @@ class ContributorModel(Model):
   can_remove = BooleanField(default=False)
   can_update_contributors = BooleanField(default=False)
   can_remove_contributors = BooleanField(default=False)
+
+  class Meta:
+    ordering = ["id"]

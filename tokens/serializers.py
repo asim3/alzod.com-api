@@ -25,5 +25,5 @@ class TokenRenewSerializer(Serializer):
           'refresh': str(new_refresh),
           'access': str(new_refresh.access_token)
         }
-
+    data['exp_days_left'] = exp_days_left
     return data

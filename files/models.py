@@ -18,6 +18,9 @@ class FileModel(Model):
   update_date = DateTimeField(auto_now=True)
   delete_date = DateField(blank=True, null=True)
 
+  class Meta:
+    ordering = ["id"]
+
   def __str__(self):
     if self.fk_parent:
       return f"{self.fk_parent.id} / {self.id} - {self.name}"

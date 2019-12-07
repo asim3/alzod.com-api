@@ -10,17 +10,10 @@ class TokenRenewView(TokenViewBase):
   serializer_class = TokenRenewSerializer
 
 
-def get_data_from_json(request):
-  try:
-    return json.loads(request.body)
-  except:
-    return {'json_loads': 'error'}
-
-
 @csrf_exempt
 def register_view(request):
   if request.method=='POST':
-    form = UserCreationForm(get_data_from_json(request))
+    form = UserCreationForm(json.loads(request.body) or {})
     if form.is_valid():
       user = form.save()
       refresh = RefreshToken.for_user(user)
