@@ -28,7 +28,7 @@ class UserFilesView(ListAPIView):
   serializer_class = FileSerializer
 
   def get_queryset(self):
-    return self.request.user.files.all()
+    return self.request.user.files.filter(fk_parent__isnull=True)
 
 
 class FilesContentsView(ListAPIView):
