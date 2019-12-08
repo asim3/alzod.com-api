@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
-def get_registered_user():
+def get_new_registered_user_tokens():
   url = reverse('register')
   data = {
     'username': "test_user",
@@ -20,14 +20,14 @@ def get_registered_user():
   return {}
 
 
-class CheckRegister(APITestCase):
+class CheckToken(APITestCase):
   e_username = {'username': ['This field is required.']}
   e_password1 = {'password1': ['This field is required.']}
   e_similar = {'password2': ['The password is too similar to the username.']}
   e_common = {'password2': ['This password is too common.']}
 
 
-  def test_password_username(self):
+  def test_registration_missing_username(self):
     url = reverse('register')
     data = {
       'password1': "fjdskfja",
@@ -37,7 +37,7 @@ class CheckRegister(APITestCase):
     self.assertEqual(response.json(), self.e_username)
 
 
-  def test_password_password1(self):
+  def test_registration_missing_password(self):
     url = reverse('register')
     data = {
       'username': "test_user",
@@ -47,7 +47,7 @@ class CheckRegister(APITestCase):
     self.assertEqual(response.json(), self.e_password1)
 
 
-  def test_password_common(self):
+  def test_registration_password_common(self):
     url = reverse('register')
     data = {
       'username': "test_user",
@@ -58,7 +58,7 @@ class CheckRegister(APITestCase):
     self.assertEqual(response.json(), self.e_common)
 
 
-  def test_password_similar(self):
+  def test_registration_password_similar_to_username(self):
     url = reverse('register')
     data = {
       'username': "test_user",
@@ -67,14 +67,6 @@ class CheckRegister(APITestCase):
     }
     response = self.client.post(url, data, format='json')
     self.assertEqual(response.json(), self.e_similar)
-
-
-  def check_refresh(self, refresh):
-    url = reverse('token_refresh')
-    data = {'refresh': refresh}
-    response = self.client.post(url, data, format='json')
-    self.assertEqual(response.status_code, s.HTTP_200_OK)
-    self.check_refresh_bad(refresh)
 
 
   def check_refresh_bad(self, refresh):
@@ -86,19 +78,26 @@ class CheckRegister(APITestCase):
     self.assertEqual(response.json(), err)
 
 
+  def check_refresh(self, refresh):
+    url = reverse('token_refresh')
+    data = {'refresh': refresh}
+    response = self.client.post(url, data, format='json')
+    self.assertEqual(response.status_code, s.HTTP_200_OK)
+    self.check_refresh_bad(refresh)
+
+
   def check_access(self, access):
     url = reverse('user_files')
     self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + access)
     response = self.client.get(url, format='json')
     self.client.credentials()
     self.assertEqual(response.status_code, s.HTTP_200_OK)
-    response_data = {'count': 0, 'next': None, 'previous': None, 'results': []}
-    self.assertEqual(response.json(), response_data)
+    response_check = {'count': 0, 'next': None, 'previous': None, 'results': []}
+    self.assertEqual(response.json(), response_check)
 
 
   def test_register(self):
-    data = get_registered_user()
-
+    data = get_new_registered_user_tokens()
     refresh = data.get('refresh')
     access = data.get('access')
     

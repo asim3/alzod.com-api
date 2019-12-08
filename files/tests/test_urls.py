@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 from tokens.tests.test_urls import StatusCodeTest, UserStatusCodeTest
 from files.models import FileModel
 
+
 class CheckStatusCode(APITestCase):
   def test_user_files(self):
     url = reverse('user_files')
