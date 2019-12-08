@@ -81,40 +81,37 @@ class CheckToken(APITestCase):
     self.assertEqual(response.status_code, s.HTTP_200_OK)
 
 
-  def check_refresh_bad(self, refresh):
-    url = reverse('token_refresh')
-    data = {'refresh': refresh + "w"}
-    response = self.client.post(url, data, format='json')
-    self.assertEqual(response.status_code, s.HTTP_401_UNAUTHORIZED)
-    err = {'detail': 'Token is invalid or expired', 'code': 'token_not_valid'}
-    self.assertEqual(response.json(), err)
-
-
-  def check_refresh(self, refresh):
+  def check_refresh(self, refresh, bad=False):
     url = reverse('token_refresh')
     data = {'refresh': refresh}
     response = self.client.post(url, data, format='json')
-    self.assertEqual(response.status_code, s.HTTP_200_OK)
-    self.check_refresh_bad(refresh)
+    if bad:
+      self.assertEqual(response.status_code, s.HTTP_401_UNAUTHORIZED)
+      err = {'detail': 'Token is invalid or expired', 'code': 'token_not_valid'}
+      self.assertEqual(response.json(), err)
+    else:
+      self.assertEqual(response.status_code, s.HTTP_200_OK)
 
 
-  def check_access(self, access):
+  def check_access(self, access, bad=False):
     url = reverse('user_files')
     self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + access)
     response = self.client.get(url, format='json')
     self.client.credentials()
-    self.assertEqual(response.status_code, s.HTTP_200_OK)
-    response_check = {'count': 0, 'next': None, 'previous': None, 'results': []}
-    self.assertEqual(response.json(), response_check)
+    if bad:
+      self.assertEqual(response.status_code, s.HTTP_401_UNAUTHORIZED)
+    else:
+      self.assertEqual(response.status_code, s.HTTP_200_OK)
+      response_check = {'count': 0, 'next': None, 'previous': None, 'results': []}
+      self.assertEqual(response.json(), response_check)
 
 
   def test_register(self):
     data = get_new_registered_user_tokens()
-    refresh = data.get('refresh')
-    access = data.get('access')
-    
-    self.check_refresh(refresh)
-    self.check_access(access)
+    self.check_refresh(data.get('refresh'))
+    self.check_access(data.get('access'))
+    self.check_refresh(data.get('refresh') + "a", bad=True)
+    self.check_access(data.get('access') + "a", bad=True)
 
 
   def test_login(self):
@@ -128,11 +125,10 @@ class CheckToken(APITestCase):
     assert response.status_code == s.HTTP_200_OK
     
     json = response.json()
-    refresh = json.get('refresh')
-    access = json.get('access')
-    
-    self.check_refresh(refresh)
-    self.check_access(access)
+    self.check_refresh(json.get('refresh'))
+    self.check_refresh(json.get('refresh') + "a", bad=True)
+    self.check_access(json.get('access'))
+    self.check_access(json.get('access') + "a", bad=True)
 
 
   def test_refresh(self):

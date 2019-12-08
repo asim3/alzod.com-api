@@ -25,13 +25,13 @@ class CheckFileModel(APITestCase):
     user_1 = User.objects.get(username="file_check_1")
     self.assertEqual(file_1.fk_user, user_1)
     user_as_dict = {'id': 1, 'username': "file_check_1", 'name': '', 'email': ''}
-    self.assertEquals(file_1.user_as_dict(), user_as_dict)
+    self.assertEqual(file_1.user_as_dict(), user_as_dict)
 
     file_3 = FileModel.objects.get(name="file_check_3")
     user_3 = User.objects.get(username="file_check_3")
     self.assertEqual(file_3.fk_user, user_3)
     user_as_dict = {'id': 3, 'username': "file_check_3", 'name': '', 'email': ''}
-    self.assertEquals(file_3.user_as_dict(), user_as_dict)
+    self.assertEqual(file_3.user_as_dict(), user_as_dict)
 
 
   def test_parents_ids(self):
