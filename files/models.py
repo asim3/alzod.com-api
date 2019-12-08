@@ -63,7 +63,7 @@ class FileModel(Model):
     full_name = self.fk_user.first_name + " " + self.fk_user.last_name
     return {
       "id": self.fk_user.pk,
-      "username": self.fk_user.pk,
+      "username": self.fk_user.username,
       "name": full_name.strip(),
       "email": self.fk_user.email
     }
