@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.urls import reverse
 from django.contrib.auth.models import User
 from rest_framework import status as s
@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 def get_new_registered_user_tokens():
   url = reverse('register')
   data = {
-    'username': "test_user",
+    'username': "test_user" + str(datetime.now())[-5:],
     'password1': "fjdskfja",
     'password2': "fjdskfja"
   }
@@ -17,6 +17,7 @@ def get_new_registered_user_tokens():
   response = client.post(url, data, format='json')
   if response.status_code == 200:
     return response.json()
+  print("\n\n\n\n", str(datetime.now())[-5:])
   return {}
 
 
@@ -69,6 +70,17 @@ class CheckToken(APITestCase):
     self.assertEqual(response.json(), self.e_similar)
 
 
+  def test_registration_ok(self):
+    url = reverse('register')
+    data = {
+      'username': "test_user",
+      'password1': "a9a7d5g36b2m",
+      'password2': "a9a7d5g36b2m"
+    }
+    response = self.client.post(url, data, format='json')
+    self.assertEqual(response.status_code, s.HTTP_200_OK)
+
+
   def check_refresh_bad(self, refresh):
     url = reverse('token_refresh')
     data = {'refresh': refresh + "w"}
@@ -104,7 +116,6 @@ class CheckToken(APITestCase):
     self.check_refresh(refresh)
     self.check_access(access)
 
-    
 
   def test_login(self):
     url = reverse('token_obtain')

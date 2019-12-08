@@ -6,7 +6,7 @@ from .permissions import check_user_file_permissions
 def check_maximum_allowed_files(total):
   max_length = 9
   if total:
-    if max_length < total:
+    if max_length <= total:
       err = "Parent file reached maximum allowed files."
       raise ValidationError({'fk_parent': [err]})
 
