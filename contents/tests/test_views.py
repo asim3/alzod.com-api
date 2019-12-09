@@ -11,6 +11,10 @@ from tokens.tests.test_token_obtain import get_new_registered_user_tokens
 class CheckContentsViews(APITestCase):
   test_number = 1
   maximum_loop = 100
+  err_permissions = {
+    'fk_parent': ['You do not have permissions on parent file.'], 
+    'status_code': 400
+  }
 
   def setUp(self):
     self.user_tokens = get_new_registered_user_tokens()
@@ -130,23 +134,23 @@ class CheckContentsViews(APITestCase):
     file_UT = self.add_contents_for_other_user()
     file_1 = self.add_new_file()
 
-    content_1 = self.add_new_content(file_U.get('pk'))
-    content_1_err = {
+    content = self.add_new_content(385)
+    err = {'fk_file': ['Parent file does not exist.'], 'status_code': 400}
+    self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    self.assertEqual(content, err)
+
+    content = self.add_new_content("385")
+    content_err = {'fk_file': ['File id invalid.'], 'status_code': 400}
+    self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    self.assertEqual(content, content_err)
+
+    content = self.add_new_content(file_U.get('pk'))
+    content_err = {
       'fk_parent': ['You do not have permissions on parent file.'],
       'status_code': 400
     }
-    self.assertEqual(content_1.get('status_code'), s.HTTP_400_BAD_REQUEST)
-    self.assertEqual(content_1, content_1_err)
-
-    content_2 = self.add_new_content(385)
-    content_2_err = {'fk_file': ['File does not exist.'], 'status_code': 400}
-    self.assertEqual(content_2.get('status_code'), s.HTTP_400_BAD_REQUEST)
-    self.assertEqual(content_2, content_2_err)
-
-    content_3 = self.add_new_content("385")
-    content_3_err = {'fk_file': ['Invalid file id..'], 'status_code': 400}
-    self.assertEqual(content_3.get('status_code'), s.HTTP_400_BAD_REQUEST)
-    self.assertEqual(content_3, content_3_err)
+    self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    self.assertEqual(content, content_err)
 
 
   # max content not implemented yet
@@ -205,80 +209,52 @@ class CheckContentsViews(APITestCase):
     file_1_contents = self.get_file_content(file_1.get('pk')).get('results')
     self.assertEqual(file_1_contents, file_contents_added)
 
-# done 
-#-------------------------------------------------------------------------------
+
   def test_show_content_bad(self):
     file_U_1 = self.add_contents_for_other_user()
     file_1 = self.add_new_file()
     content_1 = self.add_new_content(file_1.get('pk'))
     
-    content_err = self.get_content_data(6187)
-    self.assertEqual(content_err.get('status_code'), s.HTTP_404_NOT_FOUND)
+    content = self.get_content_data(6187)
+    self.assertEqual(content.get('status_code'), s.HTTP_404_NOT_FOUND)
 
-    content_err = self.get_content_data(file_U_1.get('results')[0].get('pk'))
-    print('\n333', content_err, '\n')
-    err = {'fk_parent': ['You do not have permissions on parent file.'], 'status_code': 400}
-    self.assertEqual(content_err.get('status_code'), s.HTTP_401_UNAUTHORIZED)
-    self.assertEqual(content_err, err)
+    content = self.get_content_data(file_U_1.get('results')[0].get('pk'))
+    self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    self.assertEqual(content, self.err_permissions)
 
-    content_err = self.get_content_data(file_U_1.get('results')[1].get('pk'))
-    self.assertEqual(content_err.get('status_code'), s.HTTP_401_UNAUTHORIZED)
-    self.assertEqual(content_err, err)
-    
-    content_err = self.get_content_data(content_1.get('pk'))
-    print('\n444', content_err, '\n')
-    self.assertEqual(content_err.get('status_code'), s.HTTP_200_OK)
-    
-    # delete after pass
-    content_err = self.get_content_data(2)
-    print('\n555', content_err, '\n')
-    self.assertEqual(content_err.get('status_code'), s.HTTP_401_UNAUTHORIZED)
+    content = self.get_content_data(file_U_1.get('results')[1].get('pk'))
+    self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    self.assertEqual(content, self.err_permissions)
+
+    content = self.get_content_data(content_1.get('pk'))
+    self.assertEqual(content.get('status_code'), s.HTTP_200_OK)
 
 
   def test_update_content_bad(self):
     file_U_1 = self.add_contents_for_other_user()
     file_U_2 = self.add_contents_for_other_user()
     file_1 = self.add_new_file()
+    content_U_1 = file_U_1.get('results')[0]
+    content_U_2 = file_U_1.get('results')[1]
     content_1 = self.add_new_content(file_1.get('pk'))
-    
-    err_permissions = {
-      'fk_parent': ['You do not have permissions on parent file.'],
-      'status_code': 400
-    }
+    not_exist = {'fk_file': ['Parent file does not exist.'], 'status_code': 400}
 
+    data = {'content_type': "t",'text': "put",'fk_file': file_U_1.get('pk')}
+    content = self.update_content(content_1.get('pk'), data)
+    self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    self.assertEqual(content, self.err_permissions)
 
-    # content_err = self.get_content_data(file_1.get('pk'))
-    # print('\n\n\n', content_err, '\n')
+    data = {'content_type': "t", 'text': "put", 'fk_file': 9999}
+    content = self.update_content(content_1.get('pk'), data)
+    self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    self.assertEqual(content, not_exist)
 
-    # content_err = self.get_content_data(content_1.get('pk'))
-    # print('\n\n\n', content_err, '\n')
-    # self.assertEqual(content_err.get('status_code'), s.HTTP_400_BAD_REQUEST)
-    # self.assertEqual(content_err, err_permissions)
+    data = {'fk_file': file_U_1.get('pk')}
+    content = self.patch_content(content_1.get('pk'), data)
+    self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    self.assertEqual(content, self.err_permissions)
 
-    # data = {'content_type': "t", 'text': "update 123321", 'fk_file': file_1.get('pk')}
-    # content_err = self.update_content(file_1.get('pk'), data)
-    # self.assertEqual(content_err.get('status_code'), s.HTTP_400_BAD_REQUEST)
-    # print('\n\n\n', content_err, '\n')
-    # err = {'fk_parent': ['You do not have permissions on parent file.'], 'status_code': 400}
-    # self.assertEqual(content_err, err)
-
-    # data = {'content_type': "t", 'text': "update 123321", 'fk_file': 9999}
-    # content_err = self.update_content(file_1.get('pk'), data)
-    # self.assertEqual(content_err.get('status_code'), s.HTTP_400_BAD_REQUEST)
-    # print('\n\n\n', content_err, '\n')
-    # err = {'fk_parent': ['You do not have permissions on parent file.'], 'status_code': 400}
-    # self.assertEqual(content_err, err)
-
-    # data = {'fk_file': file_1.get('pk')}
-    # content_err = self.patch_content(file_1.get('pk'), data)
-    # self.assertEqual(content_err.get('status_code'), s.HTTP_400_BAD_REQUEST)
-    # print('\n\n\n', content_err, '\n')
-    # err = {'fk_parent': ['You do not have permissions on parent file.'], 'status_code': 400}
-    # self.assertEqual(content_err, err)
-
-    # data = {'fk_file': 9999}
-    # content_err = self.patch_content(file_1.get('pk'), data)
-    # self.assertEqual(content_err.get('status_code'), s.HTTP_400_BAD_REQUEST)
-    # print('\n\n\n', content_err, '\n')
-    # err = {'fk_parent': ['You do not have permissions on parent file.'], 'status_code': 400}
-    # self.assertEqual(content_err, err)
+    data = {'fk_file': 9999}
+    content = self.patch_content(content_1.get('pk'), data)
+    self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    self.assertEqual(content, not_exist)
