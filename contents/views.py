@@ -22,3 +22,6 @@ class UpdateView(RetrieveUpdateAPIView):
   def update(self, request, *args, **kwargs):
     is_fk_file_valid(request, kwargs.get('pk'))
     return super().update(request, *args, **kwargs)
+
+  def get_queryset(self):
+    return self.request.user.files.all()

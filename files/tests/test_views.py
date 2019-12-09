@@ -7,7 +7,8 @@ from tokens.tests.test_token_obtain import get_new_registered_user_tokens
 
 
 class CheckFileViews(APITestCase):
-  test_maximum = 1
+  test_number = 1
+  maximum_loop = 100
 
   def setUp(self):
     self.user_tokens = get_new_registered_user_tokens()
@@ -22,32 +23,28 @@ class CheckFileViews(APITestCase):
     return response.json()
 
   def add_file_for_other_user(self, parent=None):
-    url = reverse('file_add')
-    data = {'name': "file - other user", 'fk_parent': parent}
     new_user_tokens = get_new_registered_user_tokens()
-
     self.client.credentials(
       HTTP_AUTHORIZATION='Bearer ' + new_user_tokens.get('access'))
-    response = self.client.post(url, data, format='json')
+    file_U = self.add_new_file(parent)
     self.client.credentials(
       HTTP_AUTHORIZATION='Bearer ' + self.user_tokens.get('access'))
-    self.assertEqual(response.status_code, s.HTTP_201_CREATED)
-    return response.json()
+    return file_U
 
-  def get_file_data(self, pk=None):
+  def get_file_data(self, pk):
     self.assertIsNotNone(pk)
     url = reverse('file_update_retrieve', kwargs={'pk': pk})
     response = self.client.get(url, format='json')
     self.assertEqual(response.status_code, s.HTTP_200_OK)
     return response.json()
     
-  def get_children_total(self, pk=None):
+  def get_children_total(self, pk):
     self.assertIsNotNone(pk)
     parent_data = self.get_file_data(pk=pk)
     return len(parent_data.get('file_children'))
 
 
-  def test_add_parent_permissions(self):
+  def test_add_parent_bad(self):
     self.add_file_for_other_user()
     url = reverse('file_add')
     
@@ -65,10 +62,11 @@ class CheckFileViews(APITestCase):
 
 
   def test_maximum_allowed_files(self, fk_parent=None):
-    if self.test_maximum < 100:
+    max_length = 9
+    self.test_number += 1
+    if self.test_number <= self.maximum_loop:
+      self.assertLess(self.test_number, self.maximum_loop)
       url = reverse('file_add')
-      max_length = 9
-      self.test_maximum += 1
       data = {'name': "test maximum", 'fk_parent': fk_parent}
       response = self.client.post(url, data, format='json')
       if response.status_code == 201:
