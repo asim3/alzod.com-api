@@ -6,8 +6,7 @@ from rest_framework.test import APITestCase
 from files.models import FileModel
 from tokens.tests.test_token_obtain import get_new_registered_user_tokens
 
-print('\n\n\n', 111, '\n')
-
+# print('\n\n\n', 111, '\n')
 
 class CheckContentsViews(APITestCase):
   test_number = 1
@@ -190,42 +189,50 @@ class CheckContentsViews(APITestCase):
     self.assertEqual(file_1_contents, file_contents)
 
 
-  def test_show_content_bad(self):
-    file_U_1 = self.add_contents_for_other_user()
-    file_1 = self.add_new_file()
-    content_1 = self.add_new_content(file_1.get('pk'))
-
-    content_err = self.get_file_content(file_U_1.get('pk'))
-    self.assertEqual(content_err.get('status_code'), s.HTTP_404_NOT_FOUND)
-    
-    content_err = self.get_content_data(1)
-    self.assertEqual(content_err.get('status_code'), s.HTTP_404_NOT_FOUND)
-    
-    content_err = self.get_content_data(6187)
-    self.assertEqual(content_err.get('status_code'), s.HTTP_404_NOT_FOUND)
-    
-    content_err = self.get_content_data(3)
-    self.assertEqual(content_err.get('status_code'), s.HTTP_404_NOT_FOUND)
-    
-    content_err = self.get_content_data(2)
-    self.assertEqual(content_err.get('status_code'), s.HTTP_404_NOT_FOUND)
-
-
   def test_update_content(self):
     file_U_1 = self.add_contents_for_other_user()
     file_U_2 = self.add_contents_for_other_user()
     file_1 = self.add_new_file()
 
-    file_contents = []
+    file_contents_added = []
     for i in range(5):
       content = self.add_new_content(file_1.get('pk'))
       self.assertEqual(content.get('status_code'), s.HTTP_201_CREATED)
 
       del content['status_code']
-      file_contents.append(content)
+      file_contents_added.append(content)
 
     file_1_contents = self.get_file_content(file_1.get('pk')).get('results')
-    self.assertEqual(file_1_contents, file_contents)
+    self.assertEqual(file_1_contents, file_contents_added)
+
+# done 
+#-------------------------------------------------------------------------------
+  def test_show_content_bad(self):
+    file_U_1 = self.add_contents_for_other_user()
+    file_1 = self.add_new_file()
+    content_1 = self.add_new_content(file_1.get('pk'))
+    
+    content_err = self.get_content_data(6187)
+    self.assertEqual(content_err.get('status_code'), s.HTTP_404_NOT_FOUND)
+
+    content_err = self.get_content_data(file_U_1.get('results')[0].get('pk'))
+    print('\n333', content_err, '\n')
+    err = {'fk_parent': ['You do not have permissions on parent file.'], 'status_code': 400}
+    self.assertEqual(content_err.get('status_code'), s.HTTP_401_UNAUTHORIZED)
+    self.assertEqual(content_err, err)
+
+    content_err = self.get_content_data(file_U_1.get('results')[1].get('pk'))
+    self.assertEqual(content_err.get('status_code'), s.HTTP_401_UNAUTHORIZED)
+    self.assertEqual(content_err, err)
+    
+    content_err = self.get_content_data(content_1.get('pk'))
+    print('\n444', content_err, '\n')
+    self.assertEqual(content_err.get('status_code'), s.HTTP_200_OK)
+    
+    # delete after pass
+    content_err = self.get_content_data(2)
+    print('\n555', content_err, '\n')
+    self.assertEqual(content_err.get('status_code'), s.HTTP_401_UNAUTHORIZED)
 
 
   def test_update_content_bad(self):

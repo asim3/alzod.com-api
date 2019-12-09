@@ -1,3 +1,4 @@
+from rest_framework.exceptions import ValidationError, NotFound, NotAuthenticated, AuthenticationFailed
 from rest_framework.generics import (
   CreateAPIView, RetrieveUpdateAPIView, ListAPIView)
 from .validators import is_fk_file_valid
@@ -12,7 +13,7 @@ class AddView(CreateAPIView):
     return super().create(request, *args, **kwargs)
 
   def get_queryset(self):
-    file_pk = self.kwargs.get("file_pk")
+    file_pk = self.kwargs.get("pk")
     return self.request.user.files.filter(pk=file_pk)
 
 class UpdateView(RetrieveUpdateAPIView):
@@ -20,8 +21,9 @@ class UpdateView(RetrieveUpdateAPIView):
   queryset = ContentModel
 
   def update(self, request, *args, **kwargs):
-    is_fk_file_valid(request, kwargs.get('pk'))
+    is_fk_file_valid(request, self.kwargs.get('pk'))
     return super().update(request, *args, **kwargs)
 
-  def get_queryset(self):
-    return self.request.user.files.all()
+  def retrieve(self, request, *args, **kwargs):
+    is_fk_file_valid(request, self.kwargs.get('pk'))
+    return super().retrieve(request, *args, **kwargs)

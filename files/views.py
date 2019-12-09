@@ -39,5 +39,5 @@ class FilesContentsView(ListAPIView):
     try:
       data = self.request.user.files.get(pk=pk)
     except:
-      raise Http404
+      raise Http404()
     return data.contents.all()
