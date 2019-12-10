@@ -102,9 +102,31 @@ class CheckContentsViews(APITestCase):
     self.assertEqual(content_2.get('status_code'), s.HTTP_201_CREATED)
     return data
 
+
   #########
   # tests #
   #########
+  def test_add_content(self):
+    file_U_1 = self.add_contents_for_other_user()
+    file_U_2 = self.add_contents_for_other_user()
+    file_1 = self.add_new_file()
+
+    content_error_1 = self.add_new_content(file_U_1.get('pk'))
+    self.assertEqual(content_error_1.get('status_code'), s.HTTP_400_BAD_REQUEST)
+    content_error_2 = self.add_new_content(file_U_2.get('pk'))
+    self.assertEqual(content_error_2.get('status_code'), s.HTTP_400_BAD_REQUEST)
+
+    file_contents = []
+    for i in range(5):
+      content = self.add_new_content(file_1.get('pk'))
+      self.assertEqual(content.get('status_code'), s.HTTP_201_CREATED)
+      del content['status_code']
+      file_contents.append(content)
+
+    file_1_contents = self.get_file_content(file_1.get('pk')).get('results')
+    self.assertEqual(file_1_contents, file_contents)
+
+
   def test_add_content_required(self):
     file_1 = self.add_new_file()
     url = reverse('content_add')
@@ -172,42 +194,57 @@ class CheckContentsViews(APITestCase):
           self.assertEqual(content.get('status_code'), s.HTTP_400_BAD_REQUEST)
 
 
-  def test_add_content(self):
-    file_U_1 = self.add_contents_for_other_user()
-    file_U_2 = self.add_contents_for_other_user()
-    file_1 = self.add_new_file()
-
-    content_error_1 = self.add_new_content(file_U_1.get('pk'))
-    self.assertEqual(content_error_1.get('status_code'), s.HTTP_400_BAD_REQUEST)
-    content_error_2 = self.add_new_content(file_U_2.get('pk'))
-    self.assertEqual(content_error_2.get('status_code'), s.HTTP_400_BAD_REQUEST)
-
-    file_contents = []
-    for i in range(5):
-      content = self.add_new_content(file_1.get('pk'))
-      self.assertEqual(content.get('status_code'), s.HTTP_201_CREATED)
-      del content['status_code']
-      file_contents.append(content)
-
-    file_1_contents = self.get_file_content(file_1.get('pk')).get('results')
-    self.assertEqual(file_1_contents, file_contents)
-
-
   def test_update_content(self):
-    file_U_1 = self.add_contents_for_other_user()
-    file_U_2 = self.add_contents_for_other_user()
     file_1 = self.add_new_file()
+    file_2 = self.add_new_file()
+    file_3 = self.add_new_file(file_1.get('pk'))
+    content_0 = self.add_new_content(file_1.get('pk'))
+    self.assertEqual(content_0.get('status_code'), s.HTTP_201_CREATED)
 
-    file_contents_added = []
-    for i in range(5):
-      content = self.add_new_content(file_1.get('pk'))
-      self.assertEqual(content.get('status_code'), s.HTTP_201_CREATED)
+    content = self.update_content(content_0.get('pk'))
+    self.assertEqual(content, {
+      'fk_file': ['This field is required.'],
+      'content_type': ['This field is required.'],
+      'text': ['This field is required.'],
+      'status_code': 400
+    })
 
-      del content['status_code']
-      file_contents_added.append(content)
+    data = {
+      'pk': content_0.get('pk'),
+      'fk_file': file_2.get('pk'),
+      'content_type': "u",
+      'text': "test update u",
+      'status_code': 200
+    }
+    content = self.update_content(content_0.get('pk'), data)
+    self.assertEqual(content, data)
 
-    file_1_contents = self.get_file_content(file_1.get('pk')).get('results')
-    self.assertEqual(file_1_contents, file_contents_added)
+
+  def test_patch_content(self):
+    file_1 = self.add_new_file()
+    file_2 = self.add_new_file()
+    file_3 = self.add_new_file(file_1.get('pk'))
+    content_0 = self.add_new_content(file_1.get('pk'))
+    self.assertEqual(content_0.get('status_code'), s.HTTP_201_CREATED)
+
+    response_data = {**content_0, 'status_code': 200}
+    content_1 = self.patch_content(content_0.get('pk'))
+    self.assertEqual(content_1, response_data)
+
+    data = {'fk_file': file_2.get('pk')}
+    response_data = {**response_data, **data}
+    content_1 = self.patch_content(content_0.get('pk'), data)
+    self.assertEqual(content_1, response_data)
+
+    data = {'content_type': "p"}
+    response_data = {**response_data, **data}
+    content_1 = self.patch_content(content_0.get('pk'), data)
+    self.assertEqual(content_1, response_data)
+
+    data = {'text': "test patch p"}
+    response_data = {**response_data, **data}
+    content_1 = self.patch_content(content_0.get('pk'), data)
+    self.assertEqual(content_1, response_data)
 
 
   def test_show_content_bad(self):
